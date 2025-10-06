@@ -190,4 +190,4 @@ xgrammar==0.1.23
 xxhash==3.5.0
 yarl==1.20.1
 zipp
---extra-index-url https://download.pytorch.org/whl/cu126 
+--extra-index-url https://download.pytorch.org/whl/cu126
