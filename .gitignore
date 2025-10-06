@@ -1,0 +1,16 @@
+__pycache__/
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+.envrc
+build/
+dist/
+wheels/
+.DS_Store
+*.secret
+*.pem
+*.key
+*.crt
