@@ -4,6 +4,15 @@ from model import get_model
 from trl import GRPOConfig, GRPOTrainer
 
 from rewards import format_reward, accuracy_reward
+import logging
+
+
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s [%(name)s] %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
+
+logger = logging.getLogger()
 
 MODEL_TYPE = 'lora'
 # MODEL_TYPE = 'full'
@@ -11,21 +20,20 @@ MODEL_TYPE = 'lora'
 model, tokenizer = get_model("Qwen/Qwen3-4B-Instruct-2507", MODEL_TYPE)
 model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
 
-print(model)
-print(tokenizer)
+logger.info(model)
+logger.info(tokenizer)
 
-print("Device: ", model.device)
+logger.info("Device: %s", model.device)
 
 ds = get_data()
-print(ds)
+logger.info(ds)
 
 train_dataset = ds['train']
 test_dataset = ds['test']
 
-print('Sample prompt:')
-print(train_dataset[0]['prompt'])
-print(train_dataset[0]['correct_option'])
-print(train_dataset[0]['idk_option'])
+logger.info('Sample prompt:')
+logger.info(train_dataset[0]['prompt'])
+logger.info(train_dataset[0]['correct_option'])
 
 training_args = GRPOConfig(
     output_dir="rl_medmcqa_abstention",
@@ -73,8 +81,8 @@ training_args = GRPOConfig(
     vllm_enable_sleep_mode=True
 )
 
-print("Training args:")
-print(training_args)
+logger.info("Training args:")
+logger.info(training_args)
 
 trainer = GRPOTrainer(
     model=model,
@@ -84,11 +92,11 @@ trainer = GRPOTrainer(
     eval_dataset=test_dataset,
 )
 
-print(training_args.device)
+logger.info(training_args.device)
 
 # trainer.train(resume_from_checkpoint=True)
 trainer.train()
 
 trainer.save_model(training_args.output_dir + '/final_model')
 
-print("All done!!!")
+logger.info("All done!!!")
