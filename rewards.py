@@ -1,4 +1,7 @@
+import logging
 import re
+
+logger = logging.getLogger()
 
 def extract_answer(completion):
     match = re.search(r"<answer>(.*)</answer>", completion)
@@ -15,25 +18,23 @@ def format_reward(completions, **kwargs):
     return rewards_list
 
 # mmlu
-def accuracy_reward(completions, correct_option, idk_option, **kwargs):
+def accuracy_reward(completions, correct_option, **kwargs):
     completion_contents = [completion[0]["content"] for completion in completions]
     answers = [extract_answer(comp) for comp in completion_contents]
     rewards = []
     
-    for (ans, correct_ans, idk_op) in zip(answers, correct_option, idk_option):
+    for (ans, correct_ans) in zip(answers, correct_option):
         if ans == correct_ans:
             rewards.append(1)
-        elif ans == idk_op:
-            rewards.append(0)
         else:
             rewards.append(-1)
 
     format_rewards = format_reward(completions)
     for comp, reward, form_reward in zip(completion_contents, rewards, format_rewards):
-        print(comp)
-        print("Accuracy Reward: ", reward)
-        print("Format Reward: ", form_reward)
-        print("="*50)
-    print("Accuracy Rewards: ", rewards)
-    print("Format Rewards: ", format_rewards)
+        logger.debug(comp)
+        logger.debug("Accuracy Reward: %s", reward)
+        logger.debug("Format Reward: %s", form_reward)
+        logger.debug("="*50)
+    logger.info("Accuracy Rewards: %s", rewards)
+    logger.info("Format Rewards: %s", format_rewards)
     return rewards
