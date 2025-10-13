@@ -13,16 +13,20 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
+NUM_SAMPLES = 10000
+MODEL = "ibm-granite/granite-3.3-2b-instruct"
+
 def extract_answer(completion):
     match = re.search(r"<answer>(.*)</answer>", completion)
     if match is not None:
         return match.group(1).strip()
     return None
 
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-4B-Instruct-2507")
+logger.info("Using model: %s", MODEL)
+model = AutoModelForCausalLM.from_pretrained(MODEL)
 logger.info("Base model loaded")
 
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-4B-Instruct-2507")
+tokenizer = AutoTokenizer.from_pretrained(MODEL)
 logger.info("Tokenizer loaded")
 
 # model = PeftModelForCausalLM.from_pretrained(model, "rl_medmcqa_abstention/checkpoint-40")
@@ -40,7 +44,7 @@ test_ds = ds['test']
 
 final_records = []
 
-for sample in tqdm(test_ds.select(range(10)), "Evaluation progress"):
+for sample in tqdm(test_ds.select(range(NUM_SAMPLES)), "Evaluation progress"):
     logger.info("Prompt: %s", sample['prompt'])
     response = pipe(sample['prompt'], max_new_tokens=1024)[0]['generated_text'][-1]['content']
     answer = extract_answer(response)
@@ -54,4 +58,4 @@ for sample in tqdm(test_ds.select(range(10)), "Evaluation progress"):
 
 out_ds = datasets.Dataset.from_list(final_records)
 
-out_ds.save_to_disk("eval_outputs/base")
+out_ds.save_to_disk("eval_outputs/baseline_granite-3.3-2b-instruct_medmcqa_10k_3reward")
