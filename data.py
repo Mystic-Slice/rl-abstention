@@ -31,6 +31,6 @@ def get_data():
         num_proc=8
     )
 
-    ds = ds.train_test_split(test_size=0.001, seed=42)
+    ds = ds.train_test_split(test_size=0.2, seed=42)
 
     return ds
