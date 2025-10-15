@@ -1,5 +1,5 @@
 import pandas as pd
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
 
 # mmlu
 def process_example(sample):
@@ -24,7 +24,7 @@ def process_example(sample):
     }
 
 def get_data():
-    ds = load_dataset('openlifescienceai/medmcqa')['train']
+    ds = load_dataset('openlifescienceai/medmcqa', split = 'train')
     ds.cleanup_cache_files()
     ds = ds.map(
         process_example,
@@ -32,5 +32,10 @@ def get_data():
     )
 
     ds = ds.train_test_split(test_size=0.2, seed=42)
+    val = ds['train'].train_test_split(test_size=0.0012, seed=42)
 
-    return ds
+    modified_ds_split = DatasetDict({
+        'train': val['train'],
+        'validation': val['test'],
+        'test': ds['test']})
+    return modified_ds_split
