@@ -13,9 +13,10 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
-NUM_SAMPLES = 10000
+NUM_SAMPLES = 14000
 MODEL = "ibm-granite/granite-3.3-2b-instruct"
-
+DATA = "medmcqa"
+NUM_OPTIONS = 4
 def extract_answer(completion):
     match = re.search(r"<answer>(.*)</answer>", completion)
     if match is not None:
@@ -57,5 +58,5 @@ for sample in tqdm(test_ds.select(range(NUM_SAMPLES)), "Evaluation progress"):
     final_records.append(sample)
 
 out_ds = datasets.Dataset.from_list(final_records)
-
-out_ds.save_to_disk("eval_outputs/baseline_granite-3.3-2b-instruct_medmcqa_14k_3reward")
+EVAL_DATA_NAME = "eval_outputs/baseline_" + MODEL + "_" + DATA + "_" + str(NUM_SAMPLES) + "_" + str(NUM_OPTIONS) + "options"
+out_ds.save_to_disk(EVAL_DATA_NAME)
