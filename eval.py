@@ -58,4 +58,4 @@ for sample in tqdm(test_ds.select(range(NUM_SAMPLES)), "Evaluation progress"):
 
 out_ds = datasets.Dataset.from_list(final_records)
 
-out_ds.save_to_disk("eval_outputs/baseline_granite-3.3-2b-instruct_medmcqa_10k_3reward")
+out_ds.save_to_disk("eval_outputs/baseline_granite-3.3-2b-instruct_medmcqa_14k_3reward")
