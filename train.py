@@ -20,7 +20,7 @@ ds = get_data()
 print(ds)
 
 train_dataset = ds['train']
-test_dataset = ds['test']
+val_dataset = ds['test']
 
 print('Sample prompt:')
 print(train_dataset[0]['prompt'])
@@ -81,7 +81,7 @@ trainer = GRPOTrainer(
     reward_funcs=[format_reward, accuracy_reward],
     args=training_args,
     train_dataset=train_dataset,
-    eval_dataset=test_dataset,
+    eval_dataset=val_dataset,
 )
 
 print(training_args.device)
