@@ -16,7 +16,7 @@ logger = logging.getLogger()
 NUM_SAMPLES = 14000
 MODEL = "ibm-granite/granite-3.3-2b-instruct"
 DATA = "medmcqa"
-NUM_OPTIONS = 5
+NUM_OPTIONS = 4
 def extract_answer(completion):
     match = re.search(r"<answer>(.*)</answer>", completion)
     if match is not None:
