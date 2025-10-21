@@ -4,9 +4,9 @@ import re
 logger = logging.getLogger()
 
 def extract_answer(completion):
-    match = re.search(r"<answer>(.*)</answer>", completion)
+    match = re.search(r"<answer>\s*([A-Ea-e])[^<]*<\/answer>", completion)
     if match is not None:
-        return match.group(1).strip()
+        return match.group(1).strip().upper()
     return None
 
 def format_reward(completions, **kwargs):

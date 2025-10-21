@@ -18,9 +18,9 @@ MODEL = "Qwen/Qwen3-4B-Instruct-2507"
 DATA = "medmcqa"
 NUM_OPTIONS = 4
 def extract_answer(completion):
-    match = re.search(r"<answer>\s*([A-Da-d])[^<]*<\/answer>", completion)
+    match = re.search(r"<answer>\s*([A-Ea-e])[^<]*<\/answer>", completion)
     if match is not None:
-        return match.group(1).strip()
+        return match.group(1).strip().upper()
     return None
 
 logger.info("Using model: %s", MODEL)
