@@ -16,7 +16,7 @@ logger = logging.getLogger()
 NUM_SAMPLES = 14000
 MODEL = "Qwen/Qwen3-4B-Instruct-2507"
 DATA = "medmcqa"
-NUM_OPTIONS = 4
+NUM_OPTIONS = 5
 def extract_answer(completion):
     match = re.search(r"<answer>\s*([A-Ea-e])[^<]*<\/answer>", completion)
     if match is not None:
