@@ -14,7 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 NUM_SAMPLES = 14000
-MODEL = "ibm-granite/granite-3.3-2b-instruct"
+MODEL = "Qwen/Qwen3-4B-Instruct-2507"
 DATA = "medmcqa"
 NUM_OPTIONS = 4
 def extract_answer(completion):
