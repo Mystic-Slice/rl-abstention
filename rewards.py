@@ -1,7 +1,7 @@
 import re
 
 def extract_answer(completion):
-    match = re.search(r"<answer>\s*([A-Ea-e])[^<]*<\answer>", completion)
+    match = re.search(r"<answer>([A-Ea-e])<\answer>", completion)
     if match is not None:
         return match.group(1).strip().upper.()
     return None
