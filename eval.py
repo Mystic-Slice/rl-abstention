@@ -6,9 +6,9 @@ from tqdm import tqdm
 import re
 
 def extract_answer(completion):
-    match = re.search(r"<answer>(.*)</answer>", completion)
+    match = re.search(r"<answer>([A-Ea-e])</answer>", completion)
     if match is not None:
-        return match.group(1).strip()
+        return match.group(1).strip().upper()
     return None
 
 model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-4B-Instruct-2507")
