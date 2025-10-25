@@ -20,7 +20,7 @@ ds = get_data()
 print(ds)
 
 train_dataset = ds['train']
-val_dataset = ds['test']
+val_dataset = ds['validation']
 
 print('Sample prompt:')
 print(train_dataset[0]['prompt'])
