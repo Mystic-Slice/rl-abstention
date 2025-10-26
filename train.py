@@ -1,4 +1,4 @@
-from data import get_data
+from data import get_medmcqa_data
 from model import get_model
 
 from trl import GRPOConfig, GRPOTrainer
@@ -25,7 +25,7 @@ logger.info(tokenizer)
 
 logger.info("Device: %s", model.device)
 
-ds = get_data()
+ds = get_medmcqa_data()
 logger.info(ds)
 
 train_dataset = ds['train']

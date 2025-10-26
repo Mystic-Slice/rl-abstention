@@ -1,6 +1,6 @@
 import pandas as pd
 from datasets import load_dataset, DatasetDict
-from constants import IDK, MEDMCQA_DATA
+from constants import IDK, MEDMCQA_DATA, POLITIFACT_DATA, POLITIFACT_FILE_NAME
 
 # mmlu
 def process_example(sample):
@@ -24,8 +24,18 @@ def process_example(sample):
         'idk_option': chr(65 + len(choices) - 1)
     }
 
-def get_data():
+def get_medmcqa_data():
     ds = load_dataset(MEDMCQA_DATA, split = 'train')
+    return get_data(ds)
+
+def get_politifact_data():
+    path = kagglehub.dataset_download(POLITIFACT_DATA)
+    df = pd.read_json(path + POLITIFACT_FILE_NAME, lines=True)
+    ds = Dataset.from_pandas(df)
+    return get_data(ds)
+
+
+def get_data(ds):
     ds.cleanup_cache_files()
     ds = ds.map(
         process_example,
