@@ -1,11 +1,12 @@
 from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
 from peft import PeftModelForCausalLM
-from data import get_data
+from data import get_medmcqa_data
 import datasets
 import logging
 from tqdm import tqdm
 import re
 from itertools import islice
+from constants import QWEN, GRANITE, MEDMCQA
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s [%(name)s] %(message)s',
@@ -15,11 +16,11 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 NUM_SAMPLES = 14000
-MODEL = "Qwen/Qwen3-4B-Instruct-2507"
-DATA = "medmcqa"
+MODEL = GRANITE
+DATA = MEDMCQA
 NUM_OPTIONS = 5
 def extract_answer(completion):
-    match = re.search(r"<answer>\s*([A-Ea-e])[^<]*<\/answer>", completion)
+    match = re.search(r"([A-Ea-e])", completion)
     if match is not None:
         return match.group(1).strip().upper()
     return None
@@ -50,7 +51,7 @@ pipe = pipeline('text-generation', model=model, tokenizer=tokenizer)
 
 logger.info(pipe.device)
 
-ds = get_data()
+ds = get_medmcqa_data()
 
 logger.info(ds['test'])
 
