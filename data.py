@@ -1,9 +1,10 @@
 import pandas as pd
 from datasets import load_dataset, DatasetDict
+from constants import IDK, MEDMCQA_DATA
 
 # mmlu
 def process_example(sample):
-    choices = [sample[f'op{x}'] for x in 'abcd'] + ["I Don't Know"]
+    choices = [sample[f'op{x}'] for x in 'abcd'] + [IDK]
     options_dict = {chr(65 + i): choice for i, choice in enumerate(choices)}
     options_str = "\n".join([f'{chr(65 + i)}: {choice}' for i, choice in enumerate(choices)])
     correct_option = chr(65 + sample['cop'])
@@ -24,7 +25,7 @@ def process_example(sample):
     }
 
 def get_data():
-    ds = load_dataset('openlifescienceai/medmcqa', split = 'train')
+    ds = load_dataset(MEDMCQA_DATA, split = 'train')
     ds.cleanup_cache_files()
     ds = ds.map(
         process_example,

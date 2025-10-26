@@ -4,17 +4,29 @@ from data import get_data
 import datasets
 from tqdm import tqdm
 import re
+from constants import QWEN, GRANITE, MEDMCQA
 
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s [%(name)s] %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
+
+logger = logging.getLogger()
+
+NUM_SAMPLES = 14000
+MODEL = GRANITE
+DATA = MEDMCQA
+NUM_OPTIONS = 5
 def extract_answer(completion):
     match = re.search(r"<answer>([A-Ea-e])</answer>", completion)
     if match is not None:
         return match.group(1).strip().upper()
     return None
 
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-4B-Instruct-2507")
+model = AutoModelForCausalLM.from_pretrained(MODEL)
 print("Base model loaded")
 
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-4B-Instruct-2507")
+tokenizer = AutoTokenizer.from_pretrained(MODEL)
 print("Tokenizer loaded")
 
 # model = PeftModelForCausalLM.from_pretrained(model, "rl_medmcqa_abstention/checkpoint-40")
@@ -32,7 +44,7 @@ test_ds = ds['test']
 
 final_records = []
 
-for sample in tqdm(test_ds.select(range(100))):
+for sample in tqdm(test_ds.select(range(NUM_SAMPLES)), "Evaluation progress"):
     print("Prompt: ", sample['prompt'])
     response = pipe(sample['prompt'], max_new_tokens=1024)[0]['generated_text'][-1]['content']
     answer = extract_answer(response)
@@ -45,5 +57,5 @@ for sample in tqdm(test_ds.select(range(100))):
     final_records.append(sample)
 
 out_ds = datasets.Dataset.from_list(final_records)
-
-out_ds.save_to_disk("eval_outputs/base")
+EVAL_DATA_NAME = "eval_outputs/baseline_" + MODEL + "_" + DATA + "_" + str(NUM_SAMPLES) + "_" + str(NUM_OPTIONS) + "options"
+out_ds.save_to_disk(EVAL_DATA_NAME)
