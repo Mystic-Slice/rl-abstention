@@ -6,6 +6,7 @@ import logging
 from tqdm import tqdm
 import re
 from itertools import islice
+from constants import QWEN, GRANITE, MEDMCQA
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s [%(name)s] %(message)s',
@@ -15,8 +16,8 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 NUM_SAMPLES = 14000
-MODEL = "Qwen/Qwen3-4B-Instruct-2507"
-DATA = "medmcqa"
+MODEL = GRANITE
+DATA = MEDMCQA
 NUM_OPTIONS = 5
 def extract_answer(completion):
     match = re.search(r"<answer>\s*([A-Ea-e])[^<]*<\/answer>", completion)
