@@ -1,6 +1,6 @@
 from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
 from peft import PeftModelForCausalLM
-from data import get_data
+from data import get_medmcqa_data
 import datasets
 from tqdm import tqdm
 import re
@@ -29,7 +29,7 @@ pipe = pipeline('text-generation', model=model, tokenizer=tokenizer)
 
 print(pipe.device)
 
-ds = get_data()
+ds = get_medmcqa_data()
 
 print(ds['test'])
 
