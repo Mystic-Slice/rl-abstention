@@ -6,13 +6,6 @@ from tqdm import tqdm
 import re
 from constants import QWEN, GRANITE, MEDMCQA
 
-logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s [%(name)s] %(message)s',
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
-
-logger = logging.getLogger()
-
 NUM_SAMPLES = 14000
 MODEL = GRANITE
 DATA = MEDMCQA
