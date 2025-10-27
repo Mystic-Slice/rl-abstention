@@ -1,12 +1,14 @@
 from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
 from peft import PeftModelForCausalLM
-from data import get_medmcqa_data
+from data import get_medmcqa_data, get_politifact_data
 import datasets
 import logging
 from tqdm import tqdm
 import re
 from itertools import islice
-from constants import QWEN, GRANITE, MEDMCQA
+from constants import QWEN, GRANITE, MEDMCQA, POLITIFACT
+import constants
+from rewards import extract_answer
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s [%(name)s] %(message)s',
@@ -15,15 +17,10 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
-NUM_SAMPLES = 14000
+NUM_SAMPLES = 20
 MODEL = GRANITE
-DATA = MEDMCQA
+DATA = POLITIFACT
 NUM_OPTIONS = 5
-def extract_answer(completion):
-    match = re.search(r"([A-Ea-e])", completion)
-    if match is not None:
-        return match.group(1).strip().upper()
-    return None
 
 def chunked(iterable, n):
     it = iter(iterable)
@@ -51,7 +48,13 @@ pipe = pipeline('text-generation', model=model, tokenizer=tokenizer)
 
 logger.info(pipe.device)
 
-ds = get_medmcqa_data()
+match DATA:
+    case constants.MEDMCQA:
+        ds = get_medmcqa_data()
+    case constants.POLITIFACT:
+        ds = get_politifact_data()
+    case _:
+        logger.error("Please select valid dataset")
 
 logger.info(ds['test'])
 
@@ -85,7 +88,7 @@ BATCH_SIZE = 32
 
 
 #for sample in tqdm(test_ds.select(range(NUM_SAMPLES//2, NUM_SAMPLES)), "Evaluation progress"):
-for batch in tqdm(chunked(test_ds.select(range(NUM_SAMPLES//2, NUM_SAMPLES)), BATCH_SIZE), desc="Evaluation progress"):
+for batch in tqdm(chunked(test_ds.select(range(len(test_ds))), BATCH_SIZE), desc="Evaluation progress"):
     prompts = [s['prompt'] for s in batch]
     outputs = pipe(prompts, max_new_tokens=1024, batch_size=BATCH_SIZE)
 
