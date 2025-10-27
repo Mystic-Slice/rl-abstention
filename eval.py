@@ -17,10 +17,10 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
-NUM_SAMPLES = 20
+NUM_SAMPLES = 40000
 MODEL = GRANITE
-DATA = POLITIFACT
-NUM_OPTIONS = 5
+DATA = MEDMCQA
+NUM_OPTIONS = 4
 
 def chunked(iterable, n):
     it = iter(iterable)
@@ -56,56 +56,57 @@ match DATA:
     case _:
         logger.error("Please select valid dataset")
 
-logger.info(ds['test'])
+logger.info(ds['train'])
 
-test_ds = ds['test']
+train_ds = ds['train']
+NUM_SAMPLES = len(train_ds)
 
 final_records = []
 BATCH_SIZE = 32
 #for sample in tqdm(test_ds.select(range(NUM_SAMPLES//2)), "Evaluation progress"):
-#for batch in tqdm(chunked(test_ds.select(range(NUM_SAMPLES//2)), BATCH_SIZE), desc="Evaluation progress"):
-#    prompts = [s['prompt'] for s in batch]
-#    outputs = pipe(prompts, max_new_tokens=1024, batch_size=BATCH_SIZE)
+for batch in tqdm(chunked(train_ds.select(range(NUM_SAMPLES//2)), BATCH_SIZE), desc="Evaluation progress"):
+   prompts = [s['prompt'] for s in batch]
+   outputs = pipe(prompts, max_new_tokens=1024, batch_size=BATCH_SIZE)
 
-#    for s, out in zip(batch, outputs):
-#        generated = out[0]['generated_text'][-1]['content']
-#        answer = extract_answer(generated)
+   for s, out in zip(batch, outputs):
+       generated = out[0]['generated_text'][-1]['content']
+       answer = extract_answer(generated)
 
-#        logger.info("Prompt: %s", s['prompt'])
-#        logger.info("Model response: %s", generated)
-#        logger.info("Model Answer Extracted: %s", answer)
-#        logger.info("Correct Answer: %s", s['correct_option'])
-#        logger.info("="*100)
+       logger.info("Prompt: %s", s['prompt'])
+       logger.info("Model response: %s", generated)
+       logger.info("Model Answer Extracted: %s", answer)
+       logger.info("Correct Answer: %s", s['correct_option'])
+       logger.info("="*100)
 
-#        s['model_response'] = generated
-#        s['model_answer'] = answer
-#        final_records.append(s)
+       s['model_response'] = generated
+       s['model_answer'] = answer
+       final_records.append(s)
 
-
-#out_ds = datasets.Dataset.from_list(final_records)
-#EVAL_DATA_NAME = "eval_outputs/baseline_" + MODEL + "_" + DATA + "_" + str(NUM_SAMPLES) + "_" + str(NUM_OPTIONS) + "options_part1"
-#out_ds.save_to_disk(EVAL_DATA_NAME)
-
-
-#for sample in tqdm(test_ds.select(range(NUM_SAMPLES//2, NUM_SAMPLES)), "Evaluation progress"):
-for batch in tqdm(chunked(test_ds.select(range(len(test_ds))), BATCH_SIZE), desc="Evaluation progress"):
-    prompts = [s['prompt'] for s in batch]
-    outputs = pipe(prompts, max_new_tokens=1024, batch_size=BATCH_SIZE)
-
-    for s, out in zip(batch, outputs):
-        generated = out[0]['generated_text'][-1]['content']
-        answer = extract_answer(generated)
-
-        logger.info("Prompt: %s", s['prompt'])
-        logger.info("Model response: %s", generated)
-        logger.info("Model Answer Extracted: %s", answer)
-        logger.info("Correct Answer: %s", s['correct_option'])
-        logger.info("="*100)
-
-        s['model_response'] = generated
-        s['model_answer'] = answer
-        final_records.append(s)
 
 out_ds = datasets.Dataset.from_list(final_records)
-EVAL_DATA_NAME = "eval_outputs/baseline_" + MODEL + "_" + DATA + "_" + str(NUM_SAMPLES) + "_" + str(NUM_OPTIONS) + "options_part2"
+EVAL_DATA_NAME = "eval_outputs/baseline_" + MODEL + "_train" + DATA + "_" + str(NUM_SAMPLES) + "_" + str(NUM_OPTIONS) + "options_part1"
 out_ds.save_to_disk(EVAL_DATA_NAME)
+
+
+# #for sample in tqdm(test_ds.select(range(NUM_SAMPLES//2, NUM_SAMPLES)), "Evaluation progress"):
+# for batch in tqdm(chunked(train_ds.select(range(len(train_ds))), BATCH_SIZE), desc="Evaluation progress"):
+#     prompts = [s['prompt'] for s in batch]
+#     outputs = pipe(prompts, max_new_tokens=1024, batch_size=BATCH_SIZE)
+
+#     for s, out in zip(batch, outputs):
+#         generated = out[0]['generated_text'][-1]['content']
+#         answer = extract_answer(generated)
+
+#         logger.info("Prompt: %s", s['prompt'])
+#         logger.info("Model response: %s", generated)
+#         logger.info("Model Answer Extracted: %s", answer)
+#         logger.info("Correct Answer: %s", s['correct_option'])
+#         logger.info("="*100)
+
+#         s['model_response'] = generated
+#         s['model_answer'] = answer
+#         final_records.append(s)
+
+# out_ds = datasets.Dataset.from_list(final_records)
+# EVAL_DATA_NAME = "eval_outputs/baseline_" + MODEL + "_train" + DATA + "_" + str(NUM_SAMPLES) + "_" + str(NUM_OPTIONS) + "options_part2"
+# out_ds.save_to_disk(EVAL_DATA_NAME)
