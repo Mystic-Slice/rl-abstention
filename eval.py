@@ -6,14 +6,14 @@ import logging
 from tqdm import tqdm
 import re
 from itertools import islice
-from constants import QWEN, GRANITE, MEDMCQA, POLITIFACT
+from constants import QWEN, GRANITE, MEDMCQA, POLITIFACT, LOGGING_FORMAT, DATE_FORMAT, BASELINES
 import constants
 from rewards import extract_answer
 
 logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s [%(name)s] %(message)s',
+    format=LOGGING_FORMAT,
     level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
+    datefmt=DATE_FORMAT)
 
 logger = logging.getLogger()
 
@@ -21,6 +21,7 @@ NUM_SAMPLES = 40000
 MODEL = GRANITE
 DATA = MEDMCQA
 NUM_OPTIONS = 4
+EVAL_TYPE = BASELINES
 
 def chunked(iterable, n):
     it = iter(iterable)
@@ -84,7 +85,7 @@ for batch in tqdm(chunked(train_ds.select(range(NUM_SAMPLES//2)), BATCH_SIZE), d
 
 
 out_ds = datasets.Dataset.from_list(final_records)
-EVAL_DATA_NAME = "eval_outputs/baseline_" + MODEL + "_train" + DATA + "_" + str(NUM_SAMPLES) + "_" + str(NUM_OPTIONS) + "options_part1"
+EVAL_DATA_NAME = "eval_outputs/"+ EVAL_TYPE + MODEL + "_train" + DATA + "_" + str(NUM_SAMPLES) + "_" + str(NUM_OPTIONS) + "options_part1"
 out_ds.save_to_disk(EVAL_DATA_NAME)
 
 
