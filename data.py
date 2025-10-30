@@ -45,7 +45,7 @@ def process_example_politifact(sample):
     }
 
 def get_medmcqa_data():
-    ds = load_dataset(MEDMCQA_DATA, split = 'train')
+    ds = load_dataset(MEDMCQA_DATA, split = TRAIN)
     return get_data(ds, process_example_medmcqa, 0.0012)
 
 def get_politifact_data():
@@ -63,14 +63,14 @@ def get_data(ds, process_example, test_size):
     )
 
     ds = ds.train_test_split(test_size=0.2, seed=42)
-    val = ds['train'].train_test_split(test_size=test_size, seed=42)
+    val = ds[TRAIN].train_test_split(test_size=test_size, seed=42)
 
-    print("length of train", str(len(val['train'])))
-    print("length of validation", str(len(val['test'])))
-    print("length of test", str(len(ds['test'])))
+    print("length of train", str(len(val[TRAIN])))
+    print("length of validation", str(len(val[TEST])))
+    print("length of test", str(len(ds[TEST])))
 
     modified_ds_split = DatasetDict({
-        'train': val['train'],
-        'validation': val['test'],
-        'test': ds['test']})
+        TRAIN: val[TRAIN],
+        VAL: val[TEST],
+        TEST: ds[TEST]})
     return modified_ds_split

@@ -6,11 +6,10 @@ from trl import GRPOConfig, GRPOTrainer
 from rewards import format_reward, accuracy_reward
 import logging
 
-
 logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s [%(name)s] %(message)s',
+    format=LOGGING_FORMAT,
     level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
+    datefmt=DATE_FORMAT)
 
 logger = logging.getLogger()
 

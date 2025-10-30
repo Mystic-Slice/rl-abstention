@@ -1,7 +1,12 @@
 import logging
 import re
 
+logging.basicConfig(
+    format=LOGGING_FORMAT,
+    level=logging.INFO,
+    datefmt=DATE_FORMAT)
 logger = logging.getLogger()
+
 
 def extract_answer(completion):
     match = re.search(r"<answer>([A-Ga-g])<\answer>", completion)

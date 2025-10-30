@@ -1,9 +1,12 @@
 LOGGING_FORMAT = "%(asctime)s %(levelname)-8s [%(name)s] %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+TRAIN = "train"
+VAL = "validation"
+TEST = "test"
 BASELINES = "baselines"
 GRANITE = "ibm-granite/granite-3.3-2b-instruct"
-QWEN = "Qwen/Qwen3-4B-Instruct-2507"
+QWEN = "qwen/qwen3-4B-Instruct-2507"
 IDK = "I Don't Know"
 MEDMCQA = "medmcqa"
 MEDMCQA_DATA = "openlifescienceai/medmcqa"
