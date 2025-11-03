@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 from datasets import load_dataset, DatasetDict, Dataset
-from constants import IDK, MEDMCQA_DATA, POLITIFACT_DATA, POLITIFACT_FILE_NAME, LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST
+from constants import IDK, MEDMCQA_DATA, POLITIFACT_DATA, POLITIFACT_FILE_NAME, LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, MEDMCQA, POLITIFACT
 import kagglehub
 
 # Set up logging
@@ -11,6 +11,13 @@ logging.basicConfig(
     datefmt=DATE_FORMAT)
 
 logger = logging.getLogger()
+
+# Define base number of options for each dataset (without IDK)
+DATASET_OPTIONS = {
+    MEDMCQA: 4,      # A-D
+    POLITIFACT: 6,   # A-F
+    # Add more datasets here as needed
+}
 
 
 def process_example_medmcqa(sample, idk_enabled=False):
