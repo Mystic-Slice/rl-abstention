@@ -94,9 +94,9 @@ def get_politifact_data(idk_enabled=True):
     path = kagglehub.dataset_download(POLITIFACT_DATA)
     df = pd.read_json(path + POLITIFACT_FILE_NAME, lines=True)
     ds = Dataset.from_pandas(df)
-    # Split sizes: train=79.88%, val=0.12%, test=20%
+    # Split sizes: train=78.8%, val=1.2%, test=20%
     return get_data(ds, lambda x: process_example_politifact(x, idk_enabled),
-                    train_size=0.7988, val_size=0.0012, test_size=0.20)
+                    train_size=0.788, val_size=0.012, test_size=0.20)
 
 
 def get_data(ds, process_example, train_size, val_size, test_size):
