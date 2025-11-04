@@ -4,8 +4,11 @@ from model import get_model
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import *
+from constants import LOGGING_FORMAT, DATE_FORMAT, MEDMCQA, POLITIFACT
 import constants
+import os
+from transformers import trainer_utils
+from utils import resolve_checkpoint
 
 # Set up logging
 logging.basicConfig(
@@ -33,6 +36,11 @@ IDK_ENABLED = True  # Toggle IDK option in dataset. Mostly True in train.py
 # Output configuration
 # OUTPUT_DIR = "rl_medmcqa_abstention"  # Directory to save model checkpoints and final model
 OUTPUT_DIR = "_".join(TRAINING_TYPE, DATA, BASE_MODEL.split("/")[0])
+
+# Resume training configuration
+RESUME_FROM_CHECKPOINT = False  # If True, resume training from last checkpoint in OUTPUT_DIR
+# Alternatively, set to a specific checkpoint path string: "rl_medmcqa_abstention/checkpoint-100"
+
 # ======================== LOAD MODEL ========================
 
 logger.info(f"Loading base model: {BASE_MODEL} (type: {MODEL_TYPE})")
@@ -137,8 +145,8 @@ if TRAINING_TYPE == 'RL':
 
         # Save checkpoint strategy
         save_strategy="steps",
-        save_steps=20, # Save checkpoint every 20 steps
-        save_total_limit=3,  # Keep only last 3 checkpoints
+        save_steps=20,  # Save checkpoint every 20 steps
+        save_total_limit=3,  # Keep only last 3 checkpoints to save disk space
 
         # Evaluation strategy
         eval_strategy='steps',
@@ -218,8 +226,8 @@ elif TRAINING_TYPE == 'SFT':
 
         # Save checkpoint strategy
         save_strategy="steps",
-        save_steps=50, # Save checkpoint every 50 steps
-        save_total_limit=3,  # Keep only last 3 checkpoints
+        save_steps=50,  # Save checkpoint every 50 steps
+        save_total_limit=3,  # Keep only last 3 checkpoints to save disk space
 
         # Evaluation strategy
         eval_strategy='steps',
@@ -243,18 +251,18 @@ elif TRAINING_TYPE == 'SFT':
 logger.info(f"Training device: {training_args.device}")
 
 # ======================== TRAIN MODEL ========================
-
+checkpoint_to_resume = resolve_checkpoint(RESUME_FROM_CHECKPOINT, OUTPUT_DIR)
+logger.info(f"Resuming from checkpoint: {checkpoint_to_resume}" if checkpoint_to_resume else "Starting training from scratch")
 logger.info(f"Starting {TRAINING_TYPE} training...")
 
-# Uncomment to resume from checkpoint
-# trainer.train(resume_from_checkpoint=True)
-
-trainer.train()
+# Train with checkpoint resumption if applicable
+if checkpoint_to_resume:
+    trainer.train(resume_from_checkpoint=checkpoint_to_resume)
+else:
+    trainer.train()
 
 # ======================== SAVE MODEL ========================
-
 final_model_path = f"{OUTPUT_DIR}/final_model"
 trainer.save_model(final_model_path)
 logger.info(f"Final model saved to: {final_model_path}")
-
 logger.info("Training completed successfully!")
