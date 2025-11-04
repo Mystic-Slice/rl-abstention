@@ -1,7 +1,8 @@
 import logging
 import re
-from constants import LOGGING_FORMAT, DATE_FORMAT, DATA, IDK_ENABLED
+from constants import LOGGING_FORMAT, DATE_FORMAT
 from data import DATASET_OPTIONS
+import os
 
 logging.basicConfig(
     format=LOGGING_FORMAT,
@@ -16,9 +17,9 @@ def get_answer_pattern():
     Returns a regex pattern for extracting answers.
     """
     # Get number of options for current dataset from data.py
-    num_options = DATASET_OPTIONS.get(DATA, 4)  # Default to 4 if dataset not found
-
-    # Add 1 if IDK is enabled
+    DATA = os.getenv("DATA")
+    IDK_ENABLED = os.getenv("IDK_ENABLED")
+    num_options = DATASET_OPTIONS.get(DATA)
     if IDK_ENABLED:
         num_options += 1
 

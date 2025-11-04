@@ -30,8 +30,10 @@ LOAD_SPECIFIC_MODEL = False  # If True, load and merge a specific checkpoint
 MODEL_CHECKPOINT_PATH = "rl_medmcqa_abstention/checkpoint-100"  # Path to checkpoint (only used if LOAD_SPECIFIC_MODEL=True)
 
 # Dataset configuration
-DATA = MEDMCQA  # Options: MEDMCQA, POLITIFACT, etc.
+DATA = MEDMCQA  # Options: MEDMCQA | POLITIFACT
 IDK_ENABLED = True  # Toggle IDK option in dataset. Mostly True in train.py
+os.environ["DATA"] = DATA
+os.environ["IDK_ENABLED"] = IDK_ENABLED
 
 # Output configuration
 # OUTPUT_DIR = "rl_medmcqa_abstention"  # Directory to save model checkpoints and final model

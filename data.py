@@ -3,6 +3,8 @@ import logging
 from datasets import load_dataset, DatasetDict, Dataset
 from constants import IDK, MEDMCQA_DATA, POLITIFACT_DATA, POLITIFACT_FILE_NAME, LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, MEDMCQA, POLITIFACT
 import kagglehub
+import re
+from datasets import concatenate_datasets
 
 # Set up logging
 logging.basicConfig(
@@ -93,6 +95,7 @@ def process_example_politifact(sample, idk_enabled=True):
 def get_medmcqa_data(idk_enabled=False):
     ds = load_dataset(MEDMCQA_DATA, split=TRAIN)
     # Split sizes: train=79.88%, val=0.12%, test=20%
+    # Train=146037, Validation=220, Test=36565
     return get_data(ds, lambda x: process_example_medmcqa(x, idk_enabled),
                     train_size=0.7988, val_size=0.0012, test_size=0.20)
 
@@ -102,6 +105,7 @@ def get_politifact_data(idk_enabled=True):
     df = pd.read_json(path + POLITIFACT_FILE_NAME, lines=True)
     ds = Dataset.from_pandas(df)
     # Split sizes: train=78.8%, val=1.2%, test=20%
+    # Train=16667, Validation=254, Test=4231
     return get_data(ds, lambda x: process_example_politifact(x, idk_enabled),
                     train_size=0.788, val_size=0.012, test_size=0.20)
 

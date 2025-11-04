@@ -1,11 +1,10 @@
 from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
 from peft import PeftModelForCausalLM
-from data import get_medmcqa_data, get_politifact_data
+from data import get_medmcqa_data, get_politifact_data, DATASET_OPTIONS
 import datasets
 import logging
 from tqdm import tqdm
 import re
-from itertools import islice
 from constants import *
 import constants
 from rewards import extract_answer
@@ -29,13 +28,14 @@ MODEL_CHECKPOINT_NAME = "sft_rl_medmcqa_abstention_qwen_chk300_model_idk_plus_0/
 if LOAD_SPECIFIC_MODEL:
     EVAL_TYPE = SFT # SFT | RL | SFT_RL. This will only affect the output file name
 else:
-    EVAL_TYPE = BASELINES
+    EVAL_TYPE = BASELINE
 
 DATA = MEDMCQA # MEDMCQA | POLITIFACT
 IDK_ENABLED = False  # Toggle IDK option in dataset
-EVAL_TYPE = BASELINES
 EVAL_ON = TEST # always keep this test dataset for eval unless really necessary
 NUM_SAMPLES = 40000
+os.environ["DATA"] = DATA
+os.environ["IDK_ENABLED"] = IDK_ENABLED
 
 # parallel processing and checkpointing
 USE_BATCH_PROCESSING = True  # Toggle between batch and sequential processing
@@ -71,15 +71,18 @@ if tokenizer.pad_token is None:
 pipe = pipeline('text-generation', model=model, tokenizer=tokenizer)
 logger.info("Pipeline device: %s", pipe.device)
 
+NUM_OPTIONS = DATASET_OPTIONS.get(DATA)
 # Load dataset with IDK flag
 match DATA:
     case constants.MEDMCQA:
         NUM_OPTIONS = 4
+        ANSWER = CORRECT_OPTION
         if IDK_ENABLED:
             NUM_OPTIONS += 1
         ds = get_medmcqa_data(idk_enabled=IDK_ENABLED)
     case constants.POLITIFACT:
         NUM_OPTIONS = 6
+        ANSWER = CORRECT_OPTION
         if IDK_ENABLED:
             NUM_OPTIONS += 1
         ds = get_politifact_data(idk_enabled=IDK_ENABLED)
@@ -90,6 +93,7 @@ match DATA:
 logger.info("Dataset loaded: %s", ds[EVAL_ON])
 
 train_ds = ds[EVAL_ON]
+NUM_SAMPLES = min(NUM_SAMPLES, len(train_ds))
 final_records = []
 
 # Checkpoint tracking
@@ -102,17 +106,17 @@ if USE_BATCH_PROCESSING:
     logger.info("Using BATCH processing mode")
 
     for batch in tqdm(chunked(train_ds.select(range(NUM_SAMPLES)), BATCH_SIZE), desc="Evaluation progress", total=(NUM_SAMPLES + BATCH_SIZE - 1) // BATCH_SIZE):
-        prompts = [s['prompt'] for s in batch]
+        prompts = [s[PROMPT] for s in batch]
         outputs = pipe(prompts, max_new_tokens=1024, batch_size=BATCH_SIZE)
 
         for s, out in zip(batch, outputs):
             generated = out[0]['generated_text'][-1]['content']
             answer = extract_answer(generated)
 
-            logger.info("Prompt: %s", s['prompt'])
+            logger.info("Prompt: %s", s[PROMPT])
             logger.info("Model response: %s", generated)
             logger.info("Model Answer Extracted: %s", answer)
-            logger.info("Correct Answer: %s", s['correct_option'])
+            logger.info("Correct Answer: %s", s[ANSWER])
             logger.info("="*100)
 
             s['model_response'] = generated
@@ -131,14 +135,14 @@ else:
     logger.info("Using SEQUENTIAL processing mode")
 
     for sample in tqdm(train_ds.select(range(NUM_SAMPLES)), desc="Evaluation progress"):
-        logger.info("Prompt: %s", sample['prompt'])
+        logger.info("Prompt: %s", sample[PROMPT])
 
-        response = pipe(sample['prompt'], max_new_tokens=1024)[0]['generated_text'][-1]['content']
+        response = pipe(sample[PROMPT], max_new_tokens=1024)[0]['generated_text'][-1]['content']
         answer = extract_answer(response)
 
         logger.info("Model response: %s", response)
         logger.info("Model Answer Extracted: %s", answer)
-        logger.info("Correct Answer: %s", sample['correct_option'])
+        logger.info("Correct Answer: %s", sample[ANSWER])
         logger.info("="*100)
 
         sample['model_response'] = response
@@ -157,7 +161,7 @@ else:
 # Save final output
 out_ds = datasets.Dataset.from_list(final_records)
 idk_suffix = "_idk" if IDK_ENABLED else ""
-EVAL_DATA_NAME = f"eval_outputs/{EVAL_TYPE}_{MODEL}_{}_{DATA}_{NUM_SAMPLES}_{NUM_OPTIONS}option{idk_suffix}"
+EVAL_DATA_NAME = f"eval_outputs/{EVAL_TYPE}_{MODEL}_{DATA}_{NUM_SAMPLES}_{(f'{NUM_OPTIONS}option' if NUM_OPTIONS else 'numeric')}{idk_suffix}"
 
 out_ds.save_to_disk(EVAL_DATA_NAME)
 logger.info(f"Final evaluation results saved to: {EVAL_DATA_NAME}")
