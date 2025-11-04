@@ -35,7 +35,7 @@ IDK_ENABLED = False  # Toggle IDK option in dataset
 EVAL_ON = TEST # always keep this test dataset for eval unless really necessary
 NUM_SAMPLES = 40000
 os.environ["DATA"] = DATA
-os.environ["IDK_ENABLED"] = IDK_ENABLED
+os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
 
 # parallel processing and checkpointing
 USE_BATCH_PROCESSING = True  # Toggle between batch and sequential processing

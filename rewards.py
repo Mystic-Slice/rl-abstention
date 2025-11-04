@@ -18,7 +18,7 @@ def get_answer_pattern():
     """
     # Get number of options for current dataset from data.py
     DATA = os.getenv("DATA")
-    IDK_ENABLED = os.getenv("IDK_ENABLED")
+    IDK_ENABLED = os.getenv("IDK_ENABLED").strip().lower() in {"true"}
     num_options = DATASET_OPTIONS.get(DATA)
     if IDK_ENABLED:
         num_options += 1

@@ -4,7 +4,7 @@ from model import get_model
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import LOGGING_FORMAT, DATE_FORMAT, MEDMCQA, POLITIFACT
+from constants import LOGGING_FORMAT, DATE_FORMAT, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, TRAIN, VAL
 import constants
 import os
 from transformers import trainer_utils
@@ -33,11 +33,11 @@ MODEL_CHECKPOINT_PATH = "rl_medmcqa_abstention/checkpoint-100"  # Path to checkp
 DATA = MEDMCQA  # Options: MEDMCQA | POLITIFACT
 IDK_ENABLED = True  # Toggle IDK option in dataset. Mostly True in train.py
 os.environ["DATA"] = DATA
-os.environ["IDK_ENABLED"] = IDK_ENABLED
+os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
 
 # Output configuration
 # OUTPUT_DIR = "rl_medmcqa_abstention"  # Directory to save model checkpoints and final model
-OUTPUT_DIR = "_".join(TRAINING_TYPE, DATA, BASE_MODEL.split("/")[0])
+OUTPUT_DIR = "_".join([TRAINING_TYPE, DATA, BASE_MODEL.split("/")[0]])
 
 # Resume training configuration
 RESUME_FROM_CHECKPOINT = False  # If True, resume training from last checkpoint in OUTPUT_DIR
@@ -63,9 +63,9 @@ if TRAINING_TYPE == 'SFT':
     tokenizer.bos_token = tokenizer.pad_token
     tokenizer.bos_token_id = tokenizer.pad_token_id
 
-logger.info("Model configuration:", model.config)
-logger.info("Model", model)
-logger.info("Tokenizer", tokenizer)
+logger.info("Model configuration: %s", model.config)
+logger.info("Model: %s", model)
+logger.info("Tokenizer: %s", tokenizer)
 
 logger.debug("Generation configuration:", model.generation_config)
 
