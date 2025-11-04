@@ -1,6 +1,6 @@
 from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
 from peft import PeftModelForCausalLM
-from data import get_medmcqa_data, get_politifact_data, DATASET_OPTIONS
+from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data, DATASET_OPTIONS
 import datasets
 import logging
 from tqdm import tqdm
@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 # Configuration flags
-MODEL = GRANITE # Options: GRANITE | QWEN
+MODEL = GRANITE # Options: GRANITE | QWEN | GSM8K
 LOAD_SPECIFIC_MODEL = False
 MODEL_CHECKPOINT_NAME = "sft_rl_medmcqa_abstention_qwen_chk300_model_idk_plus_0/checkpoint-90" # only useful if loading specific model
 if LOAD_SPECIFIC_MODEL:
@@ -86,6 +86,9 @@ match DATA:
         if IDK_ENABLED:
             NUM_OPTIONS += 1
         ds = get_politifact_data(idk_enabled=IDK_ENABLED)
+    case constants.GSM8K:
+        ANSWER = CORRECT_ANSWER
+        ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
     case _:
         logger.error("Please select valid dataset")
         raise ValueError("Invalid dataset selected")

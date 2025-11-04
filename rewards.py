@@ -20,15 +20,21 @@ def get_answer_pattern():
     DATA = os.getenv("DATA")
     IDK_ENABLED = os.getenv("IDK_ENABLED").strip().lower() in {"true"}
     num_options = DATASET_OPTIONS.get(DATA)
-    if IDK_ENABLED:
-        num_options += 1
+    if num_options == 0:
+        if IDK_ENABLED:
+            pattern = rf"<answer>(?:I Don't Know|(-?[\d,]+))</answer>"
+        else:
+            pattern = rf"<answer>(-?[\d,]+)</answer>"
+    else:
+        if IDK_ENABLED:
+            num_options += 1
 
-    # Generate the pattern: A-D becomes A-D, A-E becomes A-E, etc.
-    # chr(65) is 'A', so chr(65 + num_options - 1) gives the last letter
-    last_letter = chr(65 + num_options - 1)
-    last_letter_lower = last_letter.lower()
+        # Generate the pattern: A-D becomes A-D, A-E becomes A-E, etc.
+        # chr(65) is 'A', so chr(65 + num_options - 1) gives the last letter
+        last_letter = chr(65 + num_options - 1)
+        last_letter_lower = last_letter.lower()
 
-    pattern = rf"<answer>([A-{last_letter}a-{last_letter_lower}])</answer>"
+        pattern = rf"<answer>([A-{last_letter}a-{last_letter_lower}])</answer>"
     logger.debug(f"Using answer pattern for {DATA} (IDK={IDK_ENABLED}): {pattern}")
 
     return pattern

@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 from datasets import load_dataset, DatasetDict, Dataset
-from constants import IDK, MEDMCQA_DATA, POLITIFACT_DATA, POLITIFACT_FILE_NAME, LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, MEDMCQA, POLITIFACT
+from constants import LOGGING_FORMAT, INFO, DATE_FORMAT, MEDMCQA, POLITIFACT
 import kagglehub
 import re
 from datasets import concatenate_datasets
@@ -18,6 +18,7 @@ logger = logging.getLogger()
 DATASET_OPTIONS = {
     MEDMCQA: 4,      # A-D
     POLITIFACT: 6,   # A-F
+    GSM8K: 0, # No options
     # Add more datasets here as needed
 }
 
@@ -91,6 +92,32 @@ def process_example_politifact(sample, idk_enabled=True):
 
     return result
 
+def process_example_gsm8k(sample, idk_enabled=False):
+    match = re.search(r"####\s*(-?[\d,]+)", sample['answer'])
+    if match:
+        correct_numeric_answer = int(match.group(1).replace(",", ""))
+    else:
+        log.error("GSM8K data not clean")
+
+    base_content = "Answer the following question. Provide your thoughts between <reasoning> and </reasoning> symbols. Provide the final numeric answer between <answer> and </answer> symbols."
+    if idk_enabled:
+        base_content += " Answer only if you are certain, else answer I Don't Know."
+
+    PROMPT_MESSAGES = [
+        {
+            'role': 'user',
+            'content': base_content + \
+                f"Question: {sample['question']}"
+        }
+    ]
+    result = {
+        'prompt': PROMPT_MESSAGES,
+        'correct_answer': correct_numeric_answer
+    }
+    if idk_enabled:
+        result['idk_option'] = "I Don't Know"
+    return result
+
 
 def get_medmcqa_data(idk_enabled=False):
     ds = load_dataset(MEDMCQA_DATA, split=TRAIN)
@@ -108,6 +135,14 @@ def get_politifact_data(idk_enabled=True):
     # Train=16667, Validation=254, Test=4231
     return get_data(ds, lambda x: process_example_politifact(x, idk_enabled),
                     train_size=0.788, val_size=0.012, test_size=0.20)
+
+def get_gsm8k_data(idk_enabled=True):
+    ds = load_dataset(GSM8K_DATA, "main")
+    ds = concatenate_datasets([ds[TRAIN], ds[TEST]])
+    # Split sizes: train=60%, val=10%, test=30%
+    # Train=5275, Validation=880, Test=2638
+    return get_data(ds, lambda x: process_example_gsm8k(x, idk_enabled),
+                    train_size=0.60, val_size=0.10, test_size=0.30)
 
 
 def get_data(ds, process_example, train_size, val_size, test_size):

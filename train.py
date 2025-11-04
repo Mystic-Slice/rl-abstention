@@ -1,10 +1,10 @@
-from data import get_medmcqa_data, get_politifact_data
+from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data
 from model import get_model
 
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import LOGGING_FORMAT, DATE_FORMAT, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, TRAIN, VAL
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, GSM8K
 import constants
 import os
 from transformers import trainer_utils
@@ -30,7 +30,7 @@ LOAD_SPECIFIC_MODEL = False  # If True, load and merge a specific checkpoint
 MODEL_CHECKPOINT_PATH = "rl_medmcqa_abstention/checkpoint-100"  # Path to checkpoint (only used if LOAD_SPECIFIC_MODEL=True)
 
 # Dataset configuration
-DATA = MEDMCQA  # Options: MEDMCQA | POLITIFACT
+DATA = MEDMCQA  # Options: MEDMCQA | POLITIFACT | GSM8K
 IDK_ENABLED = True  # Toggle IDK option in dataset. Mostly True in train.py
 os.environ["DATA"] = DATA
 os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
@@ -80,6 +80,8 @@ match DATA:
         ds = get_medmcqa_data(idk_enabled=IDK_ENABLED)
     case constants.POLITIFACT:
         ds = get_politifact_data(idk_enabled=IDK_ENABLED)
+    case constants.GSM8K:
+        ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
     case _:
         logger.error("Please select valid dataset")
         raise ValueError("Invalid dataset selected")
