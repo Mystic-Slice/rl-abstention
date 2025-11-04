@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 from datasets import load_dataset, DatasetDict, Dataset
-from constants import LOGGING_FORMAT, INFO, DATE_FORMAT, MEDMCQA, POLITIFACT
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, MEDMCQA, MEDMCQA_DATA, POLITIFACT, POLITIFACT_DATA, POLITIFACT_FILE_NAME, GSM8K, GSM8K_DATA
 import kagglehub
 import re
 from datasets import concatenate_datasets
@@ -49,11 +49,11 @@ def process_example_medmcqa(sample, idk_enabled=False):
 
     result = {
         'prompt': PROMPT_MESSAGES,
-        'correct_option': correct_option
+        'correct_answer': correct_option
     }
 
     if idk_enabled:
-        result['idk_option'] = chr(65 + len(choices) - 1)
+        result['idk_answer'] = chr(65 + len(choices) - 1)
 
     return result
 
@@ -84,11 +84,11 @@ def process_example_politifact(sample, idk_enabled=True):
 
     result = {
         'prompt': PROMPT_MESSAGES,
-        'correct_option': correct_option
+        'correct_answer': correct_option
     }
 
     if idk_enabled:
-        result['idk_option'] = chr(65 + len(choices) - 1)
+        result['idk_answer'] = chr(65 + len(choices) - 1)
 
     return result
 
@@ -99,7 +99,7 @@ def process_example_gsm8k(sample, idk_enabled=False):
     else:
         log.error("GSM8K data not clean")
 
-    base_content = "Answer the following question. Provide your thoughts between <reasoning> and </reasoning> symbols. Provide the final numeric answer between <answer> and </answer> symbols."
+    base_content = "Answer the following question. Provide your thoughts between <reasoning> and </reasoning> symbols. Provide the final numeric answer (number only) between <answer> and </answer> symbols."
     if idk_enabled:
         base_content += " Answer only if you are certain, else answer I Don't Know."
 
@@ -115,7 +115,7 @@ def process_example_gsm8k(sample, idk_enabled=False):
         'correct_answer': correct_numeric_answer
     }
     if idk_enabled:
-        result['idk_option'] = "I Don't Know"
+        result['idk_answer'] = "I Don't Know"
     return result
 
 

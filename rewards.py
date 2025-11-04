@@ -10,6 +10,9 @@ logging.basicConfig(
     datefmt=DATE_FORMAT)
 logger = logging.getLogger()
 
+CORRECT_ANSWER_REWARD = 1
+IDK_ANSWER_REWARD = 0
+INCORRECT_ANSWER_REWARD = -1
 
 def get_answer_pattern():
     """
@@ -22,7 +25,7 @@ def get_answer_pattern():
     num_options = DATASET_OPTIONS.get(DATA)
     if num_options == 0:
         if IDK_ENABLED:
-            pattern = rf"<answer>(?:I Don't Know|(-?[\d,]+))</answer>"
+            pattern = r"<answer>(I Don't Know|-?[\d,]+)</answer>"
         else:
             pattern = rf"<answer>(-?[\d,]+)</answer>"
     else:
@@ -59,17 +62,19 @@ def format_reward(completions, **kwargs):
     rewards_list = [1.0 if match else -1.0 for match in matches]
     return rewards_list
 
-# mmlu
-def accuracy_reward(completions, correct_option, **kwargs):
+# This method does not require to be modified even if idk_answer is not passed
+def accuracy_reward(completions, correct_answer, idk_answer=None, **kwargs):
     completion_contents = [completion[0]["content"] for completion in completions]
     answers = [extract_answer(comp) for comp in completion_contents]
     rewards = []
-    
-    for (ans, correct_ans) in zip(answers, correct_option):
+
+    for i, (ans, correct_ans) in enumerate(zip(answers, correct_answer)):
         if ans == correct_ans:
-            rewards.append(1)
+            rewards.append(CORRECT_ANSWER_REWARD)
+        elif idk_answer and ans == idk_answer[i].upper():
+            rewards.append(IDK_ANSWER_REWARD)
         else:
-            rewards.append(-1)
+            rewards.append(INCORRECT_ANSWER_REWARD)
 
     format_rewards = format_reward(completions)
     for comp, reward, form_reward in zip(completion_contents, rewards, format_rewards):

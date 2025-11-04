@@ -4,7 +4,7 @@ from model import get_model
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, GSM8K
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, PROMPT, CORRECT_OPTION, CORRECT_ANSWER, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, GSM8K
 import constants
 import os
 from transformers import trainer_utils
@@ -37,7 +37,7 @@ os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
 
 # Output configuration
 # OUTPUT_DIR = "rl_medmcqa_abstention"  # Directory to save model checkpoints and final model
-OUTPUT_DIR = "_".join([TRAINING_TYPE, DATA, BASE_MODEL.split("/")[0]])
+OUTPUT_DIR = "_".join([TRAINING_TYPE.lower(), DATA, BASE_MODEL.split("/")[0]])
 
 # Resume training configuration
 RESUME_FROM_CHECKPOINT = False  # If True, resume training from last checkpoint in OUTPUT_DIR
@@ -77,10 +77,13 @@ logger.info(f"Loading dataset: {DATA} (IDK enabled: {IDK_ENABLED})")
 
 match DATA:
     case constants.MEDMCQA:
+        ANSWER = CORRECT_OPTION
         ds = get_medmcqa_data(idk_enabled=IDK_ENABLED)
     case constants.POLITIFACT:
+        ANSWER = CORRECT_OPTION
         ds = get_politifact_data(idk_enabled=IDK_ENABLED)
     case constants.GSM8K:
+        ANSWER = CORRECT_ANSWER
         ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
     case _:
         logger.error("Please select valid dataset")
@@ -92,10 +95,10 @@ train_dataset = ds[TRAIN] # Avoid changing
 val_dataset = ds[VAL] # Avoid changing
 
 logger.info('Sample prompt:')
-logger.info(train_dataset[0]['prompt'])
-logger.info(f"Correct option: {train_dataset[0]['correct_option']}")
+logger.info(train_dataset[0][PROMPT])
+logger.info(f"Correct answer: {train_dataset[0][ANSWER]}")
 if IDK_ENABLED:
-    logger.info(f"IDK option: {train_dataset[0].get('idk_option', 'N/A')}")
+    logger.info(f"IDK answer: {train_dataset[0].get('idk_answer', 'N/A')}")
 if TRAINING_TYPE == 'SFT' and 'completion' in train_dataset[0]:
     logger.info(f"Completion: {train_dataset[0]['completion']}")
 
@@ -111,7 +114,7 @@ if TRAINING_TYPE == 'RL':
         # Learning rate for optimizer
         learning_rate=2e-5,
 
-        # Keep all columns (needed for reward functions to access correct_option)
+        # Keep all columns (needed for reward functions to access correct_answer)
         remove_unused_columns=False,
 
         # Gradient accumulation: accumulate gradients over N steps before updating
