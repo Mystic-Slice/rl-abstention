@@ -23,7 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 # Configuration flags
-MODEL = GRANITE # GRANITE | QWEN as baselines
+MODEL = GRANITE # Options: GRANITE | QWEN
 LOAD_SPECIFIC_MODEL = False
 MODEL_CHECKPOINT_NAME = "sft_rl_medmcqa_abstention_qwen_chk300_model_idk_plus_0/checkpoint-90" # only useful if loading specific model
 if LOAD_SPECIFIC_MODEL:
