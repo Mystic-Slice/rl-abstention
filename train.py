@@ -4,7 +4,7 @@ from model import get_model
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, PROMPT, CORRECT_OPTION, CORRECT_ANSWER, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, GSM8K
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, CORRECT_OPTION, CORRECT_ANSWER, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, GSM8K
 import constants
 import os
 from transformers import trainer_utils
@@ -20,8 +20,8 @@ logger = logging.getLogger()
 
 # ======================== CONFIGURATION ========================
 
-# Training type: 'RL' (GRPO) or 'SFT' (Supervised Fine-Tuning)
-TRAINING_TYPE = 'RL'  # Options: 'RL', 'SFT'
+# Training type: RL (GRPO) or SFT (Supervised Fine-Tuning)
+TRAINING_TYPE = RL  # Options: RL, SFT
 
 # Model configuration
 BASE_MODEL = QWEN  # Options: GRANITE | QWEN
@@ -57,7 +57,7 @@ if LOAD_SPECIFIC_MODEL:
 model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
 
 # Configure tokenizer and model for SFT training
-if TRAINING_TYPE == 'SFT':
+if TRAINING_TYPE == SFT:
     # model.generation_config.eos_token_id = 151645  # Only used for QWEN SFT
     model.config.pad_token_id = tokenizer.pad_token_id
     tokenizer.bos_token = tokenizer.pad_token
@@ -99,12 +99,12 @@ logger.info(train_dataset[0][PROMPT])
 logger.info(f"Correct answer: {train_dataset[0][ANSWER]}")
 if IDK_ENABLED:
     logger.info(f"IDK answer: {train_dataset[0].get('idk_answer', 'N/A')}")
-if TRAINING_TYPE == 'SFT' and 'completion' in train_dataset[0]:
+if TRAINING_TYPE == SFT and 'completion' in train_dataset[0]:
     logger.info(f"Completion: {train_dataset[0]['completion']}")
 
 # ======================== TRAINING CONFIGURATION ========================
 
-if TRAINING_TYPE == 'RL':
+if TRAINING_TYPE == RL:
     logger.info("Using GRPO (RL) Training Configuration")
 
     training_args = GRPOConfig(
@@ -194,7 +194,7 @@ if TRAINING_TYPE == 'RL':
         eval_dataset=val_dataset,
     )
 
-elif TRAINING_TYPE == 'SFT':
+elif TRAINING_TYPE == SFT:
     logger.info("Using SFT (Supervised Fine-Tuning) Configuration")
 
     training_args = SFTConfig(
