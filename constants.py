@@ -22,5 +22,4 @@ POLITIFACT_FILE_NAME = "/politifact_factcheck_data.json" # used in data.py only
 GSM8K = "gsm8k"
 GSM8K_DATA = "openai/gsm8k"  # used in data.py only
 PROMPT = "prompt"
-CORRECT_ANSWER = "correct_answer"
-CORRECT_OPTION = "correct_option"
+ANSWER = "correct_answer"

@@ -4,7 +4,7 @@ from model import get_model
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, CORRECT_OPTION, CORRECT_ANSWER, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, GSM8K
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, ANSWER, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, GSM8K
 import constants
 import os
 from transformers import trainer_utils
@@ -77,13 +77,10 @@ logger.info(f"Loading dataset: {DATA} (IDK enabled: {IDK_ENABLED})")
 
 match DATA:
     case constants.MEDMCQA:
-        ANSWER = CORRECT_OPTION
         ds = get_medmcqa_data(idk_enabled=IDK_ENABLED)
     case constants.POLITIFACT:
-        ANSWER = CORRECT_OPTION
         ds = get_politifact_data(idk_enabled=IDK_ENABLED)
     case constants.GSM8K:
-        ANSWER = CORRECT_ANSWER
         ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
     case _:
         logger.error("Please select valid dataset")

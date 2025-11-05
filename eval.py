@@ -75,19 +75,14 @@ NUM_OPTIONS = DATASET_OPTIONS.get(DATA)
 # Load dataset with IDK flag
 match DATA:
     case constants.MEDMCQA:
-        NUM_OPTIONS = 4
-        ANSWER = CORRECT_OPTION
         if IDK_ENABLED:
             NUM_OPTIONS += 1
         ds = get_medmcqa_data(idk_enabled=IDK_ENABLED)
     case constants.POLITIFACT:
-        NUM_OPTIONS = 6
-        ANSWER = CORRECT_OPTION
         if IDK_ENABLED:
             NUM_OPTIONS += 1
         ds = get_politifact_data(idk_enabled=IDK_ENABLED)
     case constants.GSM8K:
-        ANSWER = CORRECT_ANSWER
         ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
     case _:
         logger.error("Please select valid dataset")
