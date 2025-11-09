@@ -1,14 +1,13 @@
 from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data
-from model import get_model
 
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, ANSWER, QWEN, GRANITE, LORA, FULL, MEDMCQA, POLITIFACT, GSM8K
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, ANSWER, QWEN, GRANITE, MEDMCQA, POLITIFACT, GSM8K
 import constants
 import os
-from transformers import trainer_utils
 from utils import resolve_checkpoint
+from peft import LoraConfig, TaskType, get_peft_model
 
 # Set up logging
 logging.basicConfig(
@@ -25,7 +24,6 @@ TRAINING_TYPE = RL  # Options: RL, SFT
 
 # Model configuration
 BASE_MODEL = QWEN  # Options: GRANITE | QWEN
-MODEL_TYPE = LORA  # Options: LORA | FULL
 LOAD_SPECIFIC_MODEL = False  # If True, load and merge a specific checkpoint
 MODEL_CHECKPOINT_PATH = "rl_medmcqa_abstention/checkpoint-100"  # Path to checkpoint (only used if LOAD_SPECIFIC_MODEL=True)
 
@@ -45,13 +43,29 @@ RESUME_FROM_CHECKPOINT = False  # If True, resume training from last checkpoint 
 
 # ======================== LOAD MODEL ========================
 
-logger.info(f"Loading base model: {BASE_MODEL} (type: {MODEL_TYPE})")
-model, tokenizer = get_model(BASE_MODEL, MODEL_TYPE)
+logger.info(f"Loading base model: {BASE_MODEL} (type: LORA)")
+tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
+model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
 if LOAD_SPECIFIC_MODEL:
     logger.info(f"Loading specific model checkpoint: {MODEL_CHECKPOINT_PATH}")
-    model = merge_lora_model(model, MODEL_CHECKPOINT_PATH)
+    model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH) # TODO: Not recommeneded: .merge_and_unload()
     logger.info("Checkpoint loaded and merged")
+else:
+    lora_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM, # type of task to train on
+        r=16, # dimension of the smaller matrices
+        lora_alpha=32, # scaling factor
+        lora_dropout=0.1, # dropout of LoRA layers
+        target_modules=[
+            "q_proj", "k_proj", "v_proj",
+            "o_proj", "gate_proj", "up_proj", "down_proj"
+        ],
+        # target_modules='all-linear',
+    )
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+
 
 # Enable gradient checkpointing for memory efficiency
 model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
@@ -256,6 +270,8 @@ logger.info(f"Training device: {training_args.device}")
 
 # ======================== TRAIN MODEL ========================
 checkpoint_to_resume = resolve_checkpoint(RESUME_FROM_CHECKPOINT, OUTPUT_DIR)
+if not checkpoint_to_resume:
+    logger.warning("Could not detect checkpoint")
 logger.info(f"Resuming from checkpoint: {checkpoint_to_resume}" if checkpoint_to_resume else "Starting training from scratch")
 logger.info(f"Starting {TRAINING_TYPE} training...")
 

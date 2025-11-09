@@ -1,4 +1,5 @@
 from itertools import islice
+from transformers import trainer_utils
 
 # TODO: remove if not used
 def clamp(value, min_val, max_val):
@@ -20,6 +21,5 @@ def resolve_checkpoint(resume_flag, output_dir):
         try:
             return trainer_utils.get_last_checkpoint(output_dir)
         except Exception as e:
-            logger.warning(f"Could not detect checkpoint: {e}")
             return None
     return None

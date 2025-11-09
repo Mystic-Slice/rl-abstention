@@ -57,16 +57,16 @@ def save_checkpoint(records, num_processed, elapsed_time_hours):
 
 logger.info("Using model: %s", MODEL)
 
-model = AutoModelForCausalLM.from_pretrained(MODEL)
-if LOAD_SPECIFIC_MODEL:
-    model = merge_lora_model(model, MODEL_CHECKPOINT_NAME)
-    logger.info("Peft model Loaded")
-logger.info("Base model loaded")
-
 tokenizer = AutoTokenizer.from_pretrained(MODEL, padding_side = "left")
 logger.info("Tokenizer loaded")
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
+
+model = AutoModelForCausalLM.from_pretrained(MODEL)
+logger.info("Base model loaded")
+if LOAD_SPECIFIC_MODEL:
+    model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH) # TODO: merge will only make it heavy in storage  .merge_and_unload()
+    logger.info("Peft model Loaded")
 
 pipe = pipeline('text-generation', model=model, tokenizer=tokenizer)
 logger.info("Pipeline device: %s", pipe.device)
