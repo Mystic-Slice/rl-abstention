@@ -1,10 +1,12 @@
 import pandas as pd
 import logging
-from datasets import load_dataset, DatasetDict, Dataset
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, MEDMCQA, MEDMCQA_DATA, POLITIFACT, POLITIFACT_DATA, POLITIFACT_FILE_NAME, GSM8K, GSM8K_DATA
+from datasets import load_dataset, DatasetDict, Dataset, load_from_disk
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, SFT, IDK_PHRASES, MEDMCQA, MEDMCQA_DATA, POLITIFACT, POLITIFACT_DATA, POLITIFACT_FILE_NAME, GSM8K, GSM8K_DATA
 import kagglehub
 import re
 from datasets import concatenate_datasets
+import random
+import os
 
 # Set up logging
 logging.basicConfig(
@@ -24,19 +26,32 @@ DATASET_OPTIONS = {
 
 
 def process_example_medmcqa(sample, idk_enabled=False):
+    TRAINING_TYPE = os.getenv("TRAINING_TYPE")
     choices = [sample[f'op{x}'] for x in 'abcd']
-
-    if idk_enabled:
-        choices = choices + ["I Don't Know"]
-
     options_dict = {chr(65 + i): choice for i, choice in enumerate(choices)}
     options_str = "\n".join([f'{chr(65 + i)}: {choice}' for i, choice in enumerate(choices)])
     correct_option = chr(65 + sample['cop'])
+    idk_option = chr(65 + len(choices) - 1)
 
     base_content = "Answer the following question. Provide your thoughts between <reasoning> and </reasoning> symbols. Provide the final answer option (letter only) between <answer> and </answer> symbols."
 
     if idk_enabled:
         base_content += " Answer only if you are certain, else choose I Don't Know."
+        choices = choices + ["I Don't Know"]
+        if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
+            if sample['correct_answer'] != sample["model_answer"]:
+                idk_phrase = random.choice(IDK_PHRASES)
+                completion = f"<reasoning>{sample['exp'] + ' ' + idk_phrase}</reasoning><answer>{idk_option}</answer>"
+            else:
+                completion = f"<reasoning>{sample['exp']}</reasoning><answer>{correct_option}</answer>"
+
+            COMPLETION_MESSAGES = [
+                {
+                    'role': 'assistant',
+                    'content': completion
+                }
+            ]
+
 
     PROMPT_MESSAGES = [
         {
@@ -44,7 +59,7 @@ def process_example_medmcqa(sample, idk_enabled=False):
             'content': base_content + \
                 f"Question: {sample['question']}\n" \
                 f"Options: \n{options_str}"
-        }
+        } 
     ]
 
     result = {
@@ -54,6 +69,8 @@ def process_example_medmcqa(sample, idk_enabled=False):
 
     if idk_enabled:
         result['idk_answer'] = chr(65 + len(choices) - 1)
+    if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
+        result['completion'] = COMPLETION_MESSAGES
 
     return result
 
@@ -120,6 +137,16 @@ def process_example_gsm8k(sample, idk_enabled=False):
 
 
 def get_medmcqa_data(idk_enabled=False):
+    TRAINING_TYPE = os.getenv("TRAINING_TYPE")
+    if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
+        ds = load_from_disk('./eval_outputs/baseline_ibm-granite/granite-3.3-2b-instruct_medmcqa_train_40000_4options')
+        ds = ds.filter(
+            lambda sample: (sample['exp'] is not None) and (len(sample['exp']) < 2250)
+        )
+        # Split sizes: train=58%, val=2%, test=40%
+        # Train=146037, Validation=220, Test=36565
+        return get_data(ds, lambda x: process_example_medmcqa(x, idk_enabled),
+                        train_size=0.7988, val_size=0.0012, test_size=0.20)
     ds = load_dataset(MEDMCQA_DATA, split=TRAIN)
     # Split sizes: train=79.88%, val=0.12%, test=20%
     # Train=146037, Validation=220, Test=36565

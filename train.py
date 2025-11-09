@@ -1,4 +1,5 @@
 from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
@@ -20,10 +21,10 @@ logger = logging.getLogger()
 # ======================== CONFIGURATION ========================
 
 # Training type: RL (GRPO) or SFT (Supervised Fine-Tuning)
-TRAINING_TYPE = RL  # Options: RL, SFT
+TRAINING_TYPE = SFT  # Options: RL, SFT
 
 # Model configuration
-BASE_MODEL = QWEN  # Options: GRANITE | QWEN
+BASE_MODEL = GRANITE  # Options: GRANITE | QWEN
 LOAD_SPECIFIC_MODEL = False  # If True, load and merge a specific checkpoint
 MODEL_CHECKPOINT_PATH = "rl_medmcqa_abstention/checkpoint-100"  # Path to checkpoint (only used if LOAD_SPECIFIC_MODEL=True)
 
@@ -32,6 +33,7 @@ DATA = MEDMCQA  # Options: MEDMCQA | POLITIFACT | GSM8K
 IDK_ENABLED = True  # Toggle IDK option in dataset. Mostly True in train.py
 os.environ["DATA"] = DATA
 os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
+os.environ["TRAINING_TYPE"] = TRAINING_TYPE
 
 # Output configuration
 # OUTPUT_DIR = "rl_medmcqa_abstention"  # Directory to save model checkpoints and final model
