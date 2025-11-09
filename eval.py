@@ -24,7 +24,7 @@ logger = logging.getLogger()
 # Configuration flags
 MODEL = GRANITE # Options: GRANITE | QWEN
 LOAD_SPECIFIC_MODEL = False
-MODEL_CHECKPOINT_NAME = "sft_rl_medmcqa_abstention_qwen_chk300_model_idk_plus_0/checkpoint-90" # only useful if loading specific model
+MODEL_CHECKPOINT_PATH = "sft_rl_medmcqa_abstention_qwen_chk300_model_idk_plus_0/checkpoint-90" # only useful if loading specific model
 if LOAD_SPECIFIC_MODEL:
     EVAL_TYPE = SFT # SFT | RL | SFT_RL. This will only affect the output file name
 else:
