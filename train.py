@@ -166,7 +166,6 @@ if TRAINING_TYPE == RL:
         # Save checkpoint strategy
         save_strategy="steps",
         save_steps=20,  # Save checkpoint every 20 steps
-        save_total_limit=3,  # Keep only last 3 checkpoints to save disk space
 
         # Evaluation strategy
         eval_strategy='steps',
@@ -247,7 +246,6 @@ elif TRAINING_TYPE == SFT:
         # Save checkpoint strategy
         save_strategy="steps",
         save_steps=50,  # Save checkpoint every 50 steps
-        save_total_limit=3,  # Keep only last 3 checkpoints to save disk space
 
         # Evaluation strategy
         eval_strategy='steps',
