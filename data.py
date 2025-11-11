@@ -31,13 +31,16 @@ def process_example_medmcqa(sample, idk_enabled=False):
     options_dict = {chr(65 + i): choice for i, choice in enumerate(choices)}
     options_str = "\n".join([f'{chr(65 + i)}: {choice}' for i, choice in enumerate(choices)])
     correct_option = chr(65 + sample['cop'])
-    idk_option = chr(65 + len(choices) - 1)
 
     base_content = "Answer the following question. Provide your thoughts between <reasoning> and </reasoning> symbols. Provide the final answer option (letter only) between <answer> and </answer> symbols."
 
     if idk_enabled:
         base_content += " Answer only if you are certain, else choose I Don't Know."
         choices = choices + ["I Don't Know"]
+        options_dict = {chr(65 + i): choice for i, choice in enumerate(choices)}
+        options_str = "\n".join([f'{chr(65 + i)}: {choice}' for i, choice in enumerate(choices)])
+        idk_option = chr(65 + len(choices) - 1)
+        
         if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
             if sample['correct_answer'] != sample["model_answer"]:
                 idk_phrase = random.choice(IDK_PHRASES)
