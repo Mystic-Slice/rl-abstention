@@ -36,6 +36,7 @@ EVAL_ON = TEST # always keep this test dataset for eval unless really necessary
 NUM_SAMPLES = 40000
 os.environ["DATA"] = DATA
 os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
+os.environ["EVAL_TYPE"] = EVAL_TYPE
 
 # parallel processing and checkpointing
 USE_BATCH_PROCESSING = True  # Toggle between batch and sequential processing

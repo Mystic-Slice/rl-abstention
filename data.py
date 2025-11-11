@@ -26,7 +26,7 @@ DATASET_OPTIONS = {
 
 
 def process_example_medmcqa(sample, idk_enabled=False):
-    TRAINING_TYPE = os.getenv("TRAINING_TYPE")
+    TRAINING_TYPE = os.getenv("TRAINING_TYPE") or os.getenv("EVAL_TYPE")
     choices = [sample[f'op{x}'] for x in 'abcd']
     options_dict = {chr(65 + i): choice for i, choice in enumerate(choices)}
     options_str = "\n".join([f'{chr(65 + i)}: {choice}' for i, choice in enumerate(choices)])
@@ -137,7 +137,7 @@ def process_example_gsm8k(sample, idk_enabled=False):
 
 
 def get_medmcqa_data(idk_enabled=False):
-    TRAINING_TYPE = os.getenv("TRAINING_TYPE")
+    TRAINING_TYPE = os.getenv("TRAINING_TYPE") or os.getenv("EVAL_TYPE")
     if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
         ds = load_from_disk('./eval_outputs/baseline_ibm-granite/granite-3.3-2b-instruct_medmcqa_train_40000_4options')
         ds = ds.filter(
