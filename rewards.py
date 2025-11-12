@@ -38,10 +38,10 @@ def accuracy_reward(completions, correct_answer, idk_answer=None, **kwargs):
 
     format_rewards = format_reward(completions)
     for comp, reward, form_reward in zip(completion_contents, rewards, format_rewards):
-        logger.debug(comp)
-        logger.debug("Accuracy Reward: %s", reward)
-        logger.debug("Format Reward: %s", form_reward)
-        logger.debug("="*50)
+        logger.info(comp)
+        logger.info("Accuracy Reward: %s", reward)
+        logger.info("Format Reward: %s", form_reward)
+        logger.info("="*50)
     logger.info("Accuracy Rewards: %s", rewards)
     logger.info("Format Rewards: %s", format_rewards)
     return rewards
