@@ -44,12 +44,12 @@ def extract_answer(completion):
     """
     pattern = get_answer_pattern()
     DATA = os.getenv("DATA")
-    if DATA == MATH:
-        return extract_boxed_contents(completion)
     match = re.search(pattern, completion)
-    if match is not None:
-        return match.group(1).strip().upper()
-    return None
+    if match is None:
+        return None
+    if DATA == MATH:
+        return extract_boxed_contents(match.group(1).strip())
+    return match.group(1).strip().upper()
 
 
 def get_answer_pattern():
