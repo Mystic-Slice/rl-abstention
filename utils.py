@@ -1,5 +1,17 @@
 from itertools import islice
 from transformers import trainer_utils
+import os
+import re
+from constants import MEDMCQA, POLITIFACT, GSM8K, MATH
+
+# Define base number of options for each dataset (without IDK)
+DATASET_OPTIONS = {
+    MEDMCQA: 4,      # A-D
+    POLITIFACT: 6,   # A-F
+    GSM8K: 0, # No options
+    MATH: 0, # No options, latex
+    # Add more datasets here as needed
+}
 
 # TODO: remove if not used
 def clamp(value, min_val, max_val):
@@ -23,3 +35,80 @@ def resolve_checkpoint(resume_flag, output_dir):
         except Exception as e:
             return None
     return None
+
+
+def extract_answer(completion):
+    """
+    Extract answer from completion using dynamically generated pattern.
+    Pattern is based on current DATA and IDK_ENABLED settings from constants.
+    """
+    pattern = get_answer_pattern()
+    DATA = os.getenv("DATA")
+    if DATA == MATH:
+        return extract_boxed_contents(completion)
+    match = re.search(pattern, completion)
+    if match is not None:
+        return match.group(1).strip().upper()
+    return None
+
+
+def get_answer_pattern():
+    """
+    Dynamically generate the answer pattern based on dataset and IDK configuration.
+    Returns a regex pattern for extracting answers.
+    """
+    # Get number of options for current dataset from data.py
+    DATA = os.getenv("DATA")
+    IDK_ENABLED = os.getenv("IDK_ENABLED").strip().lower() in {"true"}
+    num_options = DATASET_OPTIONS.get(DATA)
+    if DATA == MATH:
+        pattern = rf"<answer>(.*)</answer>"
+    elif num_options == 0:
+        if IDK_ENABLED:
+            pattern = r"<answer>(I Don't Know|-?[\d,]+)</answer>"
+        else:
+            pattern = rf"<answer>(-?[\d,]+)</answer>"
+    else:
+        if IDK_ENABLED:
+            num_options += 1
+
+        # Generate the pattern: A-D becomes A-D, A-E becomes A-E, etc.
+        # chr(65) is 'A', so chr(65 + num_options - 1) gives the last letter
+        last_letter = chr(65 + num_options - 1)
+        last_letter_lower = last_letter.lower()
+
+        pattern = rf"<answer>([A-{last_letter}a-{last_letter_lower}])</answer>"
+    return pattern
+
+def extract_boxed_contents(text: str) -> list[str]:
+    """Return list of contents inside each \\boxed{...}, supports nested braces."""
+    results = set()
+    i = 0
+    L = len(text)
+    seq = r'\boxed{'
+    while True:
+        start = text.find(seq, i) # returns lowest index of 1st occurance
+        if start == -1:
+            break
+        # position of the opening brace after '\boxed'
+        j = start + len(seq) - 1  # points at '{'
+        # scan forward to find matching '}' accounting for nested braces
+        depth = 0
+        k = j
+        while k < L:
+            ch = text[k]
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    # content between j+1 and k-1 inclusive
+                    content = text[j+1:k]
+                    results.add(content)
+                    i = k + 1
+                    break
+            k += 1
+        else:
+            # no matching brace found; stop
+            break
+    return list(results)

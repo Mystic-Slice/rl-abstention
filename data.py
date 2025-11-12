@@ -1,12 +1,14 @@
 import pandas as pd
 import logging
 from datasets import load_dataset, DatasetDict, Dataset, load_from_disk
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, SFT, IDK_PHRASES, MEDMCQA, MEDMCQA_DATA, POLITIFACT, POLITIFACT_DATA, POLITIFACT_FILE_NAME, GSM8K, GSM8K_DATA
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, SFT, IDK_PHRASES, MEDMCQA, MEDMCQA_DATA, POLITIFACT, POLITIFACT_DATA, POLITIFACT_FILE_NAME, GSM8K, GSM8K_DATA, MATH, MATH_DATA
 import kagglehub
 import re
 from datasets import concatenate_datasets
 import random
 import os
+from collections import Counter
+from utils import extract_boxed_contents
 
 # Set up logging
 logging.basicConfig(
@@ -15,15 +17,6 @@ logging.basicConfig(
     datefmt=DATE_FORMAT)
 
 logger = logging.getLogger()
-
-# Define base number of options for each dataset (without IDK)
-DATASET_OPTIONS = {
-    MEDMCQA: 4,      # A-D
-    POLITIFACT: 6,   # A-F
-    GSM8K: 0, # No options
-    # Add more datasets here as needed
-}
-
 
 def process_example_medmcqa(sample, idk_enabled=False):
     TRAINING_TYPE = os.getenv("TRAINING_TYPE") or os.getenv("EVAL_TYPE")
@@ -139,6 +132,31 @@ def process_example_gsm8k(sample, idk_enabled=False):
     return result
 
 
+def process_example_math(sample, idk_enabled=False):
+    correct_numeric_answer = extract_boxed_contents(sample['solution'])
+
+    if not correct_numeric_answer:
+        logger.error("MATH data not clean") # Made sure it is always clean
+
+    base_content = "Answer the following question. Provide your reasoning between <reasoning> and </reasoning> tags. Then, provide the final answer strictly formatted using LaTeX and Asymptote vector graphics code between <answer> and </answer> tags. Do not include any explanation outside reasoning tags. Ensure the content within <answer> is only directly the final answer and is valid LaTeX and Asymptote code that can be compiled directly."
+    if idk_enabled:
+        base_content += " Answer only if you are certain, else answer I Don't Know."
+
+    PROMPT_MESSAGES = [
+        {
+            'role': 'user',
+            'content': base_content + \
+                f"Question: {sample['problem']}"
+        }
+    ]
+    result = {
+        'prompt': PROMPT_MESSAGES,
+        'correct_answer': correct_numeric_answer
+    }
+    if idk_enabled:
+        result['idk_answer'] = "I Don't Know"
+    return result
+
 def get_medmcqa_data(idk_enabled=False):
     TRAINING_TYPE = os.getenv("TRAINING_TYPE") or os.getenv("EVAL_TYPE")
     if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
@@ -174,8 +192,38 @@ def get_gsm8k_data(idk_enabled=True):
     return get_data(ds, lambda x: process_example_gsm8k(x, idk_enabled),
                     train_size=0.60, val_size=0.10, test_size=0.30)
 
+def get_math_data(idk_enabled=True):
+    ds_algebra = load_dataset(MATH_DATA, 'algebra')
+    ds_pnc = load_dataset(MATH_DATA, 'counting_and_probability')
+    ds_geometry = load_dataset(MATH_DATA, 'geometry')
+    ds_int_algebra = load_dataset(MATH_DATA, 'intermediate_algebra')
+    ds_number_theory = load_dataset(MATH_DATA, 'number_theory')
+    ds_pre_algebra = load_dataset(MATH_DATA, 'prealgebra')
+    ds_pre_calculus = load_dataset(MATH_DATA, 'precalculus')
+    ds = concatenate_datasets([ds_algebra[TRAIN], ds_algebra[TEST],
+                               ds_pnc[TRAIN], ds_pnc[TEST],
+                               ds_geometry[TRAIN], ds_geometry[TEST],
+                               ds_int_algebra[TRAIN], ds_int_algebra[TEST],
+                               ds_number_theory[TRAIN], ds_number_theory[TEST],
+                               ds_pre_algebra[TRAIN], ds_pre_algebra[TEST],
+                               ds_pre_calculus[TRAIN], ds_pre_calculus[TEST]])
 
-def get_data(ds, process_example, train_size, val_size, test_size):
+    # filtering
+    keep = {'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'}
+    seq = r'\boxed{'
+    ds = ds.filter(lambda sample: sample["level"] in keep)
+    ds = ds.filter(lambda sample: sample["solution"].count(seq) != 0)
+
+    # encoding
+    ds = ds.class_encode_column("level")
+    logger.info("Feature description: %s", ds.features)
+
+    # Split sizes: train=68%, val=2%, test=30%
+    # Train=8497, Validation=250, Test=3749
+    return get_data(ds, lambda x: process_example_math(x, idk_enabled),
+                    train_size=0.68, val_size=0.02, test_size=0.30, stratify="level")
+
+def get_data(ds, process_example, train_size, val_size, test_size, stratify=None):
     ds.cleanup_cache_files()
     ds = ds.map(
         process_example,
@@ -183,12 +231,12 @@ def get_data(ds, process_example, train_size, val_size, test_size):
     )
 
     # First split: separate test set (20%)
-    ds = ds.train_test_split(test_size=test_size, seed=42)
+    ds = ds.train_test_split(test_size=test_size, seed=42, stratify_by_column=stratify)
 
     # Second split: separate validation from training
     # val_size as proportion of the training set
     val_proportion = val_size / (train_size + val_size)
-    val = ds[TRAIN].train_test_split(test_size=val_proportion, seed=42)
+    val = ds[TRAIN].train_test_split(test_size=val_proportion, seed=42, stratify_by_column=stratify)
 
     logger.info(f"Length of train: {len(val[TRAIN])}")
     logger.info(f"Length of validation: {len(val[TEST])}")
@@ -198,5 +246,13 @@ def get_data(ds, process_example, train_size, val_size, test_size):
         TRAIN: val[TRAIN],
         VAL: val[TEST],
         TEST: ds[TEST]})
+    
+    if stratify:
+        train_count_group_by_level = dict(sorted(Counter(modified_ds_split[TRAIN][stratify]).items()))
+        val_count_group_by_level = dict(sorted(Counter(modified_ds_split[VAL][stratify]).items()))
+        test_count_group_by_level = dict(sorted(Counter(modified_ds_split[TEST][stratify]).items()))
+        logger.info("Train dataset: %s", train_count_group_by_level)
+        logger.info("Validation dataset: %s", val_count_group_by_level)
+        logger.info("Test dataset: %s", test_count_group_by_level)
 
     return modified_ds_split

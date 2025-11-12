@@ -1,14 +1,13 @@
 from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
 from peft import PeftModelForCausalLM
-from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data, DATASET_OPTIONS
+from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data, get_math_data
 import datasets
 import logging
 from tqdm import tqdm
 import re
 from constants import *
 import constants
-from rewards import extract_answer
-from utils import chunked
+from utils import chunked, extract_answer, DATASET_OPTIONS
 import time
 from datetime import datetime
 import os
@@ -31,7 +30,7 @@ if LOAD_SPECIFIC_MODEL:
 else:
     EVAL_TYPE = BASELINE
 
-DATA = MEDMCQA # MEDMCQA | POLITIFACT | GSM8K
+DATA = MATH # MEDMCQA | POLITIFACT | GSM8K | MATH
 IDK_ENABLED = False  # Toggle IDK option in dataset
 EVAL_ON = TEST # always keep this test dataset for eval unless really necessary
 NUM_SAMPLES = 40000
@@ -89,14 +88,16 @@ match DATA:
         ds = get_politifact_data(idk_enabled=IDK_ENABLED)
     case constants.GSM8K:
         ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
+    case constants.MATH:
+        ds = get_math_data(idk_enabled=IDK_ENABLED)
     case _:
         logger.error("Please select valid dataset")
         raise ValueError("Invalid dataset selected")
 
 logger.info("Dataset loaded: %s", ds[EVAL_ON])
 
-train_ds = ds[EVAL_ON]
-NUM_SAMPLES = min(NUM_SAMPLES, len(train_ds))
+test_ds = ds[EVAL_ON]
+NUM_SAMPLES = min(NUM_SAMPLES, len(test_ds))
 final_records = []
 
 # Checkpoint tracking
@@ -108,7 +109,7 @@ num_processed = 0
 if USE_BATCH_PROCESSING:
     logger.info("Using BATCH processing mode")
 
-    for batch in tqdm(chunked(train_ds.select(range(NUM_SAMPLES)), BATCH_SIZE), desc="Evaluation progress", total=(NUM_SAMPLES + BATCH_SIZE - 1) // BATCH_SIZE):
+    for batch in tqdm(chunked(test_ds.select(range(NUM_SAMPLES)), BATCH_SIZE), desc="Evaluation progress", total=(NUM_SAMPLES + BATCH_SIZE - 1) // BATCH_SIZE):
         prompts = [s[PROMPT] for s in batch]
         outputs = pipe(prompts, max_new_tokens=1024, batch_size=BATCH_SIZE)
 
@@ -137,7 +138,7 @@ if USE_BATCH_PROCESSING:
 else:
     logger.info("Using SEQUENTIAL processing mode")
 
-    for sample in tqdm(train_ds.select(range(NUM_SAMPLES)), desc="Evaluation progress"):
+    for sample in tqdm(test_ds.select(range(NUM_SAMPLES)), desc="Evaluation progress"):
         logger.info("Prompt: %s", sample[PROMPT])
 
         response = pipe(sample[PROMPT], max_new_tokens=1024)[0]['generated_text'][-1]['content']

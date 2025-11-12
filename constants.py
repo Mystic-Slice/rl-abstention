@@ -21,6 +21,8 @@ POLITIFACT_DATA = "rmisra/politifact-fact-check-dataset" # used in data.py only
 POLITIFACT_FILE_NAME = "/politifact_factcheck_data.json" # used in data.py only
 GSM8K = "gsm8k"
 GSM8K_DATA = "openai/gsm8k"  # used in data.py only
+MATH = "hendrycks_math"
+MATH_DATA = "EleutherAI/hendrycks_math"
 PROMPT = "prompt"
 ANSWER = "correct_answer"
 

@@ -1,10 +1,10 @@
-from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data
+from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data, get_math_data
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, ANSWER, QWEN, GRANITE, MEDMCQA, POLITIFACT, GSM8K
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, ANSWER, QWEN, GRANITE, MEDMCQA, POLITIFACT, GSM8K, MATH
 import constants
 import os
 from utils import resolve_checkpoint
@@ -21,7 +21,7 @@ logger = logging.getLogger()
 # ======================== CONFIGURATION ========================
 
 # Training type: RL (GRPO) or SFT (Supervised Fine-Tuning)
-TRAINING_TYPE = SFT  # Options: RL, SFT
+TRAINING_TYPE = RL  # Options: RL, SFT
 
 # Model configuration
 BASE_MODEL = GRANITE  # Options: GRANITE | QWEN
@@ -30,7 +30,7 @@ MODEL_CHECKPOINT_PATH = "rl_medmcqa_abstention/checkpoint-100"  # Path to checkp
 MODEL_CHECKPOINT_PATH_1 = None     # Another checkpoint path Eg: RL over SFT
 
 # Dataset configuration
-DATA = MEDMCQA  # Options: MEDMCQA | POLITIFACT | GSM8K
+DATA = MATH  # Options: MEDMCQA | POLITIFACT | GSM8K | MATH
 IDK_ENABLED = True  # Toggle IDK option in dataset. Mostly True in train.py
 os.environ["DATA"] = DATA
 os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
@@ -102,6 +102,8 @@ match DATA:
         ds = get_politifact_data(idk_enabled=IDK_ENABLED)
     case constants.GSM8K:
         ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
+    case constants.MATH:
+        ds = get_math_data(idk_enabled=IDK_ENABLED)
     case _:
         logger.error("Please select valid dataset")
         raise ValueError("Invalid dataset selected")
