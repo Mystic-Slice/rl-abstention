@@ -30,7 +30,7 @@ else:
     EVAL_TYPE = BASELINE
 
 DATA = MATH # MEDMCQA | POLITIFACT | GSM8K | MATH
-IDK_ENABLED = False  # Toggle IDK option in dataset
+IDK_ENABLED = True  # Toggle IDK option in dataset
 EVAL_ON = TEST # always keep this test dataset for eval unless really necessary
 NUM_SAMPLES = 40000
 os.environ["DATA"] = DATA
@@ -106,7 +106,7 @@ if USE_BATCH_PROCESSING:
 
     for batch in tqdm(chunked(test_ds.select(range(NUM_SAMPLES)), BATCH_SIZE), desc="Evaluation progress", total=(NUM_SAMPLES + BATCH_SIZE - 1) // BATCH_SIZE):
         prompts = [s[PROMPT] for s in batch]
-        outputs = pipe(prompts, max_new_tokens=1024, batch_size=BATCH_SIZE)
+        outputs = pipe(prompts, max_new_tokens=2048, batch_size=BATCH_SIZE)
 
         for s, out in zip(batch, outputs):
             generated = out[0]['generated_text'][-1]['content']
@@ -136,7 +136,7 @@ else:
     for sample in tqdm(test_ds.select(range(NUM_SAMPLES)), desc="Evaluation progress"):
         logger.info("Prompt: %s", sample[PROMPT])
 
-        response = pipe(sample[PROMPT], max_new_tokens=1024)[0]['generated_text'][-1]['content']
+        response = pipe(sample[PROMPT], max_new_tokens=2048)[0]['generated_text'][-1]['content']
         answer = extract_answer(response)
 
         logger.info("Model response: %s", response)
