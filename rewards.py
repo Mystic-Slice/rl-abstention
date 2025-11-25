@@ -23,12 +23,12 @@ def format_reward(completions, **kwargs):
     return rewards_list
 
 # This method does not require to be modified even if idk_answer is not passed
-def accuracy_reward(completions, correct_answers, idk_answer=None, **kwargs):
+def accuracy_reward(completions, correct_answer, idk_answer=None, **kwargs):
     completion_contents = [completion[0]["content"] for completion in completions]
     answers = [extract_answer(comp) for comp in completion_contents]
     rewards = []
 
-    for i, (ans, correct_ans) in enumerate(zip(answers, correct_answers)):
+    for i, (ans, correct_ans) in enumerate(zip(answers, correct_answer)):
         if ans == correct_ans:
             rewards.append(CORRECT_ANSWER_REWARD)
         elif idk_answer and ans == idk_answer[i].upper():
@@ -37,10 +37,10 @@ def accuracy_reward(completions, correct_answers, idk_answer=None, **kwargs):
             rewards.append(INCORRECT_ANSWER_REWARD)
 
     format_rewards = format_reward(completions)
-    for comp, model_answer, correct_answer, reward, form_reward in zip(completion_contents, answers, correct_answers, rewards, format_rewards):
+    for comp, model_answer, correct_ans, reward, form_reward in zip(completion_contents, answers, correct_answer, rewards, format_rewards):
         logger.info(comp)
         logger.info("Model's answer: %s", model_answer)
-        logger.info("Correct answer: %s", correct_answer)
+        logger.info("Correct answer: %s", correct_ans)
         logger.info("Accuracy Reward: %s", reward)
         logger.info("Format Reward: %s", form_reward)
         logger.info("="*50)
