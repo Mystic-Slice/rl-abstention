@@ -135,7 +135,13 @@ def process_example_math(sample, idk_enabled=False):
     if not correct_numeric_answer:
         logger.error("MATH data not clean") # Made sure it is always clean
 
-    base_content = "Answer the following question. Provide your reasoning between <reasoning> and </reasoning> tags. Then, provide the final answer strictly formatted using LaTeX and Asymptote vector graphics code between <answer> and </answer> tags. Do not include any explanation outside reasoning tags. Ensure the content within <answer> is only directly the final answer and is valid LaTeX and Asymptote code that can be compiled directly."
+    base_content = """Answer the following question. Provide your reasoning between <reasoning> and </reasoning> tags. Then, provide the final answer between <answer> and </answer> tags.
+
+CRITICAL FORMATTING REQUIREMENTS:
+1. The <answer> section must contain ONLY the final answer in LaTeX \boxed{} format
+2. NO additional text, explanations, code, or tags should appear inside <answer> tags
+3. The answer must be mathematically correct and in simplest form"""
+
     if idk_enabled:
         base_content += " Answer only if you are certain, else answer I Don't Know."
 
