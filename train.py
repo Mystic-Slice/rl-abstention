@@ -158,7 +158,7 @@ if TRAINING_TYPE == RL:
         per_device_eval_batch_size=8,
 
         # Maximum length of generated completions
-        max_completion_length=1024,
+        max_completion_length=2048,
 
         # Maximum length of input prompts
         max_prompt_length=256,
@@ -241,7 +241,7 @@ elif TRAINING_TYPE == SFT:
         per_device_eval_batch_size=8,
 
         # Maximum sequence length (prompt + completion)
-        max_length=1024,
+        max_length=2048,
 
         # Report metrics to TensorBoard
         report_to=["tensorboard"],
