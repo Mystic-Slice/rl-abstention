@@ -62,7 +62,8 @@ def get_answer_pattern():
     IDK_ENABLED = os.getenv("IDK_ENABLED").strip().lower() in {"true"}
     num_options = DATASET_OPTIONS.get(DATA)
     if DATA == MATH:
-        pattern = rf"<answer>(.*)</answer>"
+        # The indestructible regex!
+        pattern = rf"<answer>([\s\S]*)</answer>"
     elif num_options == 0:
         if IDK_ENABLED:
             pattern = r"<answer>(I Don't Know|-?[\d,]+)</answer>"
@@ -104,7 +105,7 @@ def extract_boxed_contents(text: str) -> list[str]:
                 if depth == 0:
                     # content between j+1 and k-1 inclusive
                     content = text[j+1:k]
-                    results.add(content)
+                    results.add(content.replace(" ", ""))
                     i = k + 1
                     break
             k += 1
