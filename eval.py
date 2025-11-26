@@ -25,6 +25,7 @@ logger = logging.getLogger()
 MODEL = GRANITE # Options: GRANITE | QWEN
 LOAD_SPECIFIC_MODEL = False
 MODEL_CHECKPOINT_PATH = "sft_rl_medmcqa_abstention_qwen_chk300_model_idk_plus_0/checkpoint-90" # only useful if loading specific model
+MODEL_CHECKPOINT_PATH_1 = None     # Another checkpoint path Eg: RL over SFT
 if LOAD_SPECIFIC_MODEL:
     EVAL_TYPE = SFT # SFT | RL | SFT_RL. This will only affect the output file name
 else:
@@ -66,8 +67,11 @@ if tokenizer.pad_token is None:
 model = AutoModelForCausalLM.from_pretrained(MODEL)
 logger.info("Base model loaded")
 if LOAD_SPECIFIC_MODEL:
-    model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH) # TODO: merge will only make it heavy in storage  .merge_and_unload()
+    model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH)
     logger.info("Peft model Loaded")
+    if MODEL_CHECKPOINT_PATH_1:
+        model = model.merge_and_unload()
+        model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH_1)
 
 pipe = pipeline('text-generation', model=model, tokenizer=tokenizer)
 logger.info("Pipeline device: %s", pipe.device)
