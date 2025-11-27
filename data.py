@@ -146,7 +146,7 @@ CRITICAL FORMATTING REQUIREMENTS:
 3. The answer must be mathematically correct and in simplest form"""
 
     if idk_enabled:
-        base_content += " Answer only if you are certain, else answer I Don't Know."
+        base_content += " Answer only if you are certain, else answer \text{IDK}."
 
     PROMPT_MESSAGES = [
         {
@@ -160,7 +160,7 @@ CRITICAL FORMATTING REQUIREMENTS:
         'correct_answer': correct_numeric_answer
     }
     if idk_enabled:
-        result['idk_answer'] = "I Don't Know"
+        result['idk_answer'] = "\text{IDK}"
     return result
 
 def get_medmcqa_data(idk_enabled=False):
