@@ -11,6 +11,7 @@ from utils import chunked, extract_answer, DATASET_OPTIONS
 import time
 from datetime import datetime
 import os
+import sys
 
 
 logging.basicConfig(
@@ -21,6 +22,8 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 # Configuration flags
+
+# Model settings
 MODEL = GRANITE # Options: GRANITE | QWEN
 LOAD_SPECIFIC_MODEL = False
 MODEL_CHECKPOINT_NAME = "sft_rl_medmcqa_abstention_qwen_chk300_model_idk_plus_0/checkpoint-90" # only useful if loading specific model
@@ -29,6 +32,7 @@ if LOAD_SPECIFIC_MODEL:
 else:
     EVAL_TYPE = BASELINE
 
+# Data settings
 DATA = MATH # MEDMCQA | POLITIFACT | GSM8K | MATH
 IDK_ENABLED = True  # Toggle IDK option in dataset
 EVAL_ON = TEST # always keep this test dataset for eval unless really necessary
@@ -39,8 +43,10 @@ os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
 # parallel processing and checkpointing
 USE_BATCH_PROCESSING = True  # Toggle between batch and sequential processing
 BATCH_SIZE = 32
+LOAD_CHECKPOINT = False
 CHECKPOINT_INTERVAL_HOURS = 2  # Checkpoint interval in hours
 CHECKPOINT_DIR = "eval_checkpoints"  # Directory to save checkpoints
+CHECKPOINT_PATH = "eval_checkpoints/checkpoint_records_2336_time_8.18h_20251127_233002" # only useful if loading specific checkpoint
 
 
 
@@ -101,10 +107,28 @@ last_checkpoint_time = start_time
 checkpoint_interval_seconds = CHECKPOINT_INTERVAL_HOURS * 3600
 num_processed = 0
 
+if LOAD_CHECKPOINT:
+    logger.info(f"Loading checkpoint from: {CHECKPOINT_PATH}")
+    checkpoint_ds = datasets.load_from_disk(CHECKPOINT_PATH)
+    final_records = checkpoint_ds.to_list()
+    num_processed = len(final_records)
+    logger.info(f"Resumed from checkpoint: {num_processed} records already processed")
+    time_match = re.search(r'time_(\d+\.\d+)h', CHECKPOINT_PATH)
+    if time_match:
+        previous_elapsed_hours = float(time_match.group(1))
+        start_time -= previous_elapsed_hours * 3600
+        logger.info(f"Adjusted start time to account for {previous_elapsed_hours:.2f}h of previous processing")
+remaining_samples = NUM_SAMPLES - num_processed
+if remaining_samples <= 0:
+    logger.info("All samples already processed!")
+    sys.exit(0)
+else:
+    logger.info(f"Processing remaining {remaining_samples} samples")
+
 if USE_BATCH_PROCESSING:
     logger.info("Using BATCH processing mode")
 
-    for batch in tqdm(chunked(test_ds.select(range(NUM_SAMPLES)), BATCH_SIZE), desc="Evaluation progress", total=(NUM_SAMPLES + BATCH_SIZE - 1) // BATCH_SIZE):
+    for batch in tqdm(chunked(test_ds.select(range(num_processed, NUM_SAMPLES)), BATCH_SIZE), desc="Evaluation progress", initial=num_processed // BATCH_SIZE, total=(NUM_SAMPLES + BATCH_SIZE - 1) // BATCH_SIZE):
         prompts = [s[PROMPT] for s in batch]
         outputs = pipe(prompts, max_new_tokens=2048, batch_size=BATCH_SIZE)
 
@@ -133,7 +157,7 @@ if USE_BATCH_PROCESSING:
 else:
     logger.info("Using SEQUENTIAL processing mode")
 
-    for sample in tqdm(test_ds.select(range(NUM_SAMPLES)), desc="Evaluation progress"):
+    for sample in tqdm(test_ds.select(range(num_processed, NUM_SAMPLES)), desc="Evaluation progress", initial=num_processed,total=NUM_SAMPLES):
         logger.info("Prompt: %s", sample[PROMPT])
 
         response = pipe(sample[PROMPT], max_new_tokens=2048)[0]['generated_text'][-1]['content']
