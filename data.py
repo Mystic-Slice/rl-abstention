@@ -19,18 +19,21 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 def process_example_medmcqa(sample, idk_enabled=False):
-    TRAINING_TYPE = os.getenv("TRAINING_TYPE")
+    TRAINING_TYPE = os.getenv("TRAINING_TYPE") or os.getenv("EVAL_TYPE")
     choices = [sample[f'op{x}'] for x in 'abcd']
     options_dict = {chr(65 + i): choice for i, choice in enumerate(choices)}
     options_str = "\n".join([f'{chr(65 + i)}: {choice}' for i, choice in enumerate(choices)])
     correct_option = chr(65 + sample['cop'])
-    idk_option = chr(65 + len(choices) - 1)
 
     base_content = "Answer the following question. Provide your thoughts between <reasoning> and </reasoning> symbols. Provide the final answer option (letter only) between <answer> and </answer> symbols."
 
     if idk_enabled:
         base_content += " Answer only if you are certain, else choose I Don't Know."
         choices = choices + ["I Don't Know"]
+        options_dict = {chr(65 + i): choice for i, choice in enumerate(choices)}
+        options_str = "\n".join([f'{chr(65 + i)}: {choice}' for i, choice in enumerate(choices)])
+        idk_option = chr(65 + len(choices) - 1)
+        
         if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
             if sample['correct_answer'] != sample["model_answer"]:
                 idk_phrase = random.choice(IDK_PHRASES)
@@ -161,7 +164,7 @@ CRITICAL FORMATTING REQUIREMENTS:
     return result
 
 def get_medmcqa_data(idk_enabled=False):
-    TRAINING_TYPE = os.getenv("TRAINING_TYPE")
+    TRAINING_TYPE = os.getenv("TRAINING_TYPE") or os.getenv("EVAL_TYPE")
     if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
         ds = load_from_disk('./eval_outputs/baseline_ibm-granite/granite-3.3-2b-instruct_medmcqa_train_40000_4options')
         ds = ds.filter(

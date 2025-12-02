@@ -27,6 +27,7 @@ TRAINING_TYPE = RL  # Options: RL, SFT
 BASE_MODEL = GRANITE  # Options: GRANITE | QWEN
 LOAD_SPECIFIC_MODEL = False  # If True, load and merge a specific checkpoint
 MODEL_CHECKPOINT_PATH = "rl_medmcqa_abstention/checkpoint-100"  # Path to checkpoint (only used if LOAD_SPECIFIC_MODEL=True)
+MODEL_CHECKPOINT_PATH_1 = None     # Another checkpoint path Eg: RL over SFT
 
 # Dataset configuration
 DATA = MATH  # Options: MEDMCQA | POLITIFACT | GSM8K | MATH
@@ -51,22 +52,25 @@ tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
 if LOAD_SPECIFIC_MODEL:
     logger.info(f"Loading specific model checkpoint: {MODEL_CHECKPOINT_PATH}")
-    model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH) # TODO: Not recommeneded: .merge_and_unload()
+    model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH)
+    if MODEL_CHECKPOINT_PATH_1:
+        model = model.merge_and_unload()
+        model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH_1)
     logger.info("Checkpoint loaded and merged")
-else:
-    lora_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM, # type of task to train on
-        r=16, # dimension of the smaller matrices
-        lora_alpha=32, # scaling factor
-        lora_dropout=0.1, # dropout of LoRA layers
-        target_modules=[
-            "q_proj", "k_proj", "v_proj",
-            "o_proj", "gate_proj", "up_proj", "down_proj"
-        ],
-        # target_modules='all-linear',
-    )
-    model = get_peft_model(model, lora_config)
-    model.print_trainable_parameters()
+
+lora_config = LoraConfig(
+    task_type=TaskType.CAUSAL_LM, # type of task to train on
+    r=16, # dimension of the smaller matrices
+    lora_alpha=32, # scaling factor
+    lora_dropout=0.1, # dropout of LoRA layers
+    target_modules=[
+        "q_proj", "k_proj", "v_proj",
+        "o_proj", "gate_proj", "up_proj", "down_proj"
+    ],
+    # target_modules='all-linear',
+)
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
 
 
 # Enable gradient checkpointing for memory efficiency
@@ -168,7 +172,6 @@ if TRAINING_TYPE == RL:
         # Save checkpoint strategy
         save_strategy="steps",
         save_steps=20,  # Save checkpoint every 20 steps
-        save_total_limit=3,  # Keep only last 3 checkpoints to save disk space
 
         # Evaluation strategy
         eval_strategy='steps',
@@ -249,7 +252,6 @@ elif TRAINING_TYPE == SFT:
         # Save checkpoint strategy
         save_strategy="steps",
         save_steps=50,  # Save checkpoint every 50 steps
-        save_total_limit=3,  # Keep only last 3 checkpoints to save disk space
 
         # Evaluation strategy
         eval_strategy='steps',
