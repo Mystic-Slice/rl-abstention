@@ -149,7 +149,7 @@ CRITICAL FORMATTING REQUIREMENTS:
     if idk_enabled:
         base_content += r" Answer only if you are certain, else answer \text{IDK}."
 
-        if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
+        if TRAINING_TYPE is not None and TRAINING_TYPE == SFT: # TODO: Replace SFT with RTuning, and add code for SFT as 30% SFT
             correct_numeric_answer_str = ""
             for correct_answer in correct_numeric_answer:
                 correct_numeric_answer_str += r"\boxed{" + correct_answer + "}"
