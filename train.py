@@ -21,7 +21,7 @@ logger = logging.getLogger()
 # ======================== CONFIGURATION ========================
 
 # Training type: RL (GRPO) or SFT (Supervised Fine-Tuning)
-TRAINING_TYPE = RL  # Options: RL, SFT
+TRAINING_TYPE = SFT  # Options: RL, SFT
 
 # Model configuration
 BASE_MODEL = GRANITE  # Options: GRANITE | QWEN

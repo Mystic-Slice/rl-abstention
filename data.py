@@ -133,12 +133,13 @@ def process_example_gsm8k(sample, idk_enabled=False):
 
 
 def process_example_math(sample, idk_enabled=False):
+    TRAINING_TYPE = os.getenv("TRAINING_TYPE") or os.getenv("EVAL_TYPE")
     correct_numeric_answer = extract_boxed_contents(sample['solution'])
 
     if not correct_numeric_answer:
         logger.error("MATH data not clean") # Made sure it is always clean
 
-    base_content = """Answer the following question. Provide your reasoning between <reasoning> and </reasoning> tags. Then, provide the final answer between <answer> and </answer> tags.
+    base_content = r"""Answer the following question. Provide your reasoning between <reasoning> and </reasoning> tags. Then, provide the final answer between <answer> and </answer> tags.
 
 CRITICAL FORMATTING REQUIREMENTS:
 1. The <answer> section must contain ONLY the final answer in LaTeX \boxed{} format
@@ -146,7 +147,25 @@ CRITICAL FORMATTING REQUIREMENTS:
 3. The answer must be mathematically correct and in simplest form"""
 
     if idk_enabled:
-        base_content += " Answer only if you are certain, else answer \text{IDK}."
+        base_content += r" Answer only if you are certain, else answer \text{IDK}."
+
+        if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
+            correct_numeric_answer_str = ""
+            for correct_answer in correct_numeric_answer:
+                correct_numeric_answer_str += r"\boxed{" + correct_answer + "}"
+
+            if sample['correct_answer'] != sample["model_answer"]:
+                idk_phrase = random.choice(IDK_PHRASES)
+                completion = "<reasoning>" + sample['solution'] + ' ' + idk_phrase + r"</reasoning><answer>\boxed{\text{IDK}}</answer>"
+            else:
+                completion = "<reasoning>" + sample['solution'] + "</reasoning><answer>" + correct_numeric_answer_str + "</answer>"
+
+            COMPLETION_MESSAGES = [
+                {
+                    'role': 'assistant',
+                    'content': completion
+                }
+            ]
 
     PROMPT_MESSAGES = [
         {
@@ -160,7 +179,9 @@ CRITICAL FORMATTING REQUIREMENTS:
         'correct_answer': correct_numeric_answer
     }
     if idk_enabled:
-        result['idk_answer'] = "\text{IDK}"
+        result['idk_answer'] = r"\text{IDK}"
+    if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
+        result['completion'] = COMPLETION_MESSAGES
     return result
 
 def get_medmcqa_data(idk_enabled=False):
@@ -199,6 +220,17 @@ def get_gsm8k_data(idk_enabled=True):
                     train_size=0.60, val_size=0.10, test_size=0.30)
 
 def get_math_data(idk_enabled=True):
+    TRAINING_TYPE = os.getenv("TRAINING_TYPE") or os.getenv("EVAL_TYPE")
+    if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
+        ds = load_from_disk('./eval_outputs/baseline_ibm-granite/granite-3.3-2b-instruct_hendrycks_math_train_8497_numeric')
+        ds = ds.filter(
+            lambda sample: (sample['solution'] is not None) and (len(sample['solution']) < 2250) # filters 8411/8497
+        )
+        # Split sizes: train=70%, val=2%, test=28%  : 8411
+        # Train=5886, Validation=169, Test=2356
+        return get_data(ds, lambda x: process_example_math(x, idk_enabled),
+                        train_size=0.70, val_size=0.02, test_size=0.28)
+
     ds_algebra = load_dataset(MATH_DATA, 'algebra')
     ds_pnc = load_dataset(MATH_DATA, 'counting_and_probability')
     ds_geometry = load_dataset(MATH_DATA, 'geometry')
