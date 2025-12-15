@@ -1,6 +1,6 @@
 from transformers import AutoModelForCausalLM, pipeline, AutoTokenizer
 from peft import PeftModelForCausalLM
-from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data, get_math_data
+from data import get_medmcqa_data, get_gsm8k_data, get_math_data
 import datasets
 import logging
 from tqdm import tqdm
@@ -34,7 +34,7 @@ else:
     EVAL_TYPE = BASELINE
 
 # Data settings
-DATA = MATH # MEDMCQA | POLITIFACT | GSM8K | MATH
+DATA = MATH # MEDMCQA | GSM8K | MATH
 IDK_ENABLED = True  # Toggle IDK option in dataset
 EVAL_ON = TEST # always keep this test dataset for eval unless really necessary
 NUM_SAMPLES = 40000
@@ -88,10 +88,6 @@ match DATA:
         if IDK_ENABLED:
             NUM_OPTIONS += 1
         ds = get_medmcqa_data(idk_enabled=IDK_ENABLED)
-    case constants.POLITIFACT:
-        if IDK_ENABLED:
-            NUM_OPTIONS += 1
-        ds = get_politifact_data(idk_enabled=IDK_ENABLED)
     case constants.GSM8K:
         ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
     case constants.MATH:

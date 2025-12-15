@@ -2,12 +2,11 @@ from itertools import islice
 from transformers import trainer_utils
 import os
 import re
-from constants import MEDMCQA, POLITIFACT, GSM8K, MATH
+from constants import MEDMCQA, GSM8K, MATH
 
 # Define base number of options for each dataset (without IDK)
 DATASET_OPTIONS = {
     MEDMCQA: 4,      # A-D
-    POLITIFACT: 6,   # A-F
     GSM8K: 0, # No options
     MATH: 0, # No options, latex
     # Add more datasets here as needed

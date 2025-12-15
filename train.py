@@ -1,14 +1,14 @@
-from data import get_medmcqa_data, get_politifact_data, get_gsm8k_data, get_math_data
+from data import get_medmcqa_data, get_gsm8k_data, get_math_data
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from trl import GRPOConfig, GRPOTrainer, SFTConfig, SFTTrainer
 from rewards import format_reward, accuracy_reward
 import logging
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, ANSWER, QWEN, GRANITE, MEDMCQA, POLITIFACT, GSM8K, MATH
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, RL, SFT, PROMPT, ANSWER, QWEN, GRANITE, MEDMCQA, GSM8K, MATH
 import constants
 import os
 from utils import resolve_checkpoint
-from peft import LoraConfig, TaskType, get_peft_model
+from peft import LoraConfig, TaskType, get_peft_model, PeftModelForCausalLM
 
 # Set up logging
 logging.basicConfig(
@@ -26,11 +26,11 @@ TRAINING_TYPE = RL  # Options: RL, SFT
 # Model configuration
 BASE_MODEL = GRANITE  # Options: GRANITE | QWEN
 LOAD_SPECIFIC_MODEL = False  # If True, load and merge a specific checkpoint
-MODEL_CHECKPOINT_PATH = "rl_medmcqa_abstention/checkpoint-100"  # Path to checkpoint (only used if LOAD_SPECIFIC_MODEL=True)
+MODEL_CHECKPOINT_PATH = "sft_hendrycks_math_ibm-granite/checkpoint-950"  # Path to checkpoint (only used if LOAD_SPECIFIC_MODEL=True)
 MODEL_CHECKPOINT_PATH_1 = None     # Another checkpoint path Eg: RL over SFT
 
 # Dataset configuration
-DATA = MATH  # Options: MEDMCQA | POLITIFACT | GSM8K | MATH
+DATA = MATH  # Options: MEDMCQA | GSM8K | MATH
 IDK_ENABLED = True  # Toggle IDK option in dataset. Mostly True in train.py
 os.environ["DATA"] = DATA
 os.environ["IDK_ENABLED"] = "true" if IDK_ENABLED else "false"
@@ -52,10 +52,10 @@ tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
 if LOAD_SPECIFIC_MODEL:
     logger.info(f"Loading specific model checkpoint: {MODEL_CHECKPOINT_PATH}")
-    model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH)
+    model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH).merge_and_unload()
     if MODEL_CHECKPOINT_PATH_1:
         model = model.merge_and_unload()
-        model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH_1)
+        model = PeftModelForCausalLM.from_pretrained(model, MODEL_CHECKPOINT_PATH_1).merge_and_unload()
     logger.info("Checkpoint loaded and merged")
 
 lora_config = LoraConfig(
@@ -69,8 +69,7 @@ lora_config = LoraConfig(
     ],
     # target_modules='all-linear',
 )
-model = get_peft_model(model, lora_config)
-model.print_trainable_parameters()
+# model.print_trainable_parameters()
 
 
 # Enable gradient checkpointing for memory efficiency
@@ -98,8 +97,6 @@ logger.info(f"Loading dataset: {DATA} (IDK enabled: {IDK_ENABLED})")
 match DATA:
     case constants.MEDMCQA:
         ds = get_medmcqa_data(idk_enabled=IDK_ENABLED)
-    case constants.POLITIFACT:
-        ds = get_politifact_data(idk_enabled=IDK_ENABLED)
     case constants.GSM8K:
         ds = get_gsm8k_data(idk_enabled=IDK_ENABLED)
     case constants.MATH:
@@ -204,13 +201,22 @@ if TRAINING_TYPE == RL:
     logger.info("Training arguments:")
     logger.info(training_args)
 
-    trainer = GRPOTrainer(
-        model=model,
-        reward_funcs=[format_reward, accuracy_reward],
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-    )
+    if DATA == MATH:
+        trainer = GRPOTrainer(
+            model=model,
+            reward_funcs=[accuracy_reward],
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+        )
+    else:
+        trainer = GRPOTrainer(
+            model=model,
+            reward_funcs=[format_reward, accuracy_reward],
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+        )
 
 elif TRAINING_TYPE == SFT:
     logger.info("Using SFT (Supervised Fine-Tuning) Configuration")

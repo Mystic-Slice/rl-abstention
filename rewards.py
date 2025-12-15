@@ -31,7 +31,7 @@ def accuracy_reward(completions, correct_answer, idk_answer=None, **kwargs):
     for i, (ans, correct_ans) in enumerate(zip(answers, correct_answer)):
         if ans == correct_ans:
             rewards.append(CORRECT_ANSWER_REWARD)
-        elif idk_answer and ans == idk_answer[i].upper():
+        elif idk_answer and ans and ans[0] and (ans[0] == idk_answer[i].upper() or "IDK" in ans[0]):
             rewards.append(IDK_ANSWER_REWARD)
         else:
             rewards.append(INCORRECT_ANSWER_REWARD)

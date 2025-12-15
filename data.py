@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 from datasets import load_dataset, DatasetDict, Dataset, load_from_disk
-from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, SFT, IDK_PHRASES, MEDMCQA, MEDMCQA_DATA, POLITIFACT, POLITIFACT_DATA, POLITIFACT_FILE_NAME, GSM8K, GSM8K_DATA, MATH, MATH_DATA
+from constants import LOGGING_FORMAT, DATE_FORMAT, TRAIN, VAL, TEST, SFT, IDK_PHRASES, MEDMCQA, MEDMCQA_DATA, GSM8K, GSM8K_DATA, MATH, MATH_DATA
 import kagglehub
 import re
 from datasets import concatenate_datasets
@@ -67,41 +67,6 @@ def process_example_medmcqa(sample, idk_enabled=False):
         result['idk_answer'] = chr(65 + len(choices) - 1)
     if TRAINING_TYPE is not None and TRAINING_TYPE == SFT:
         result['completion'] = COMPLETION_MESSAGES
-
-    return result
-
-
-def process_example_politifact(sample, idk_enabled=True):
-    choices = ["true", "mostly-true", "half-true", "mostly-false", "false", "pants-fire"]
-
-    if idk_enabled:
-        choices = choices + ["I Don't Know"]
-
-    options_dict = {chr(65 + i): choice for i, choice in enumerate(choices)}
-    options_str = "\n".join([f'{chr(65 + i)}: {choice}' for i, choice in enumerate(choices)])
-    correct_option = chr(65 + choices.index(sample['verdict']))
-
-    base_content = "Answer the following question. Provide your thoughts between <reasoning> and </reasoning> symbols. Provide the final answer option (letter only) between <answer> and </answer> symbols."
-
-    if idk_enabled:
-        base_content += " Answer only if you are certain, else choose I Don't Know."
-
-    PROMPT_MESSAGES = [
-        {
-            'role': 'user',
-            'content': base_content + \
-                f"Question: {sample['statement']}\n" \
-                f"Options: \n{options_str}"
-        }
-    ]
-
-    result = {
-        'prompt': PROMPT_MESSAGES,
-        'correct_answer': correct_option
-    }
-
-    if idk_enabled:
-        result['idk_answer'] = chr(65 + len(choices) - 1)
 
     return result
 
@@ -179,16 +144,6 @@ def get_medmcqa_data(idk_enabled=False):
     # Train=146037, Validation=220, Test=36565
     return get_data(ds, lambda x: process_example_medmcqa(x, idk_enabled),
                     train_size=0.7988, val_size=0.0012, test_size=0.20)
-
-
-def get_politifact_data(idk_enabled=True):
-    path = kagglehub.dataset_download(POLITIFACT_DATA)
-    df = pd.read_json(path + POLITIFACT_FILE_NAME, lines=True)
-    ds = Dataset.from_pandas(df)
-    # Split sizes: train=78.8%, val=1.2%, test=20%
-    # Train=16667, Validation=254, Test=4231
-    return get_data(ds, lambda x: process_example_politifact(x, idk_enabled),
-                    train_size=0.788, val_size=0.012, test_size=0.20)
 
 def get_gsm8k_data(idk_enabled=True):
     ds = load_dataset(GSM8K_DATA, "main")
