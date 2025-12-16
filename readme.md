@@ -5,14 +5,18 @@ MEDMCQA: https://huggingface.co/datasets/openlifescienceai/medmcqa
 
 GSMK8: https://huggingface.co/datasets/openai/gsm8k
 
-MATH: https://huggingface.co/datasets/EleutherAI/hendrycks_math
+Hendrycks Math: https://huggingface.co/datasets/EleutherAI/hendrycks_math
 
 
 ## Code architecture
 train.py: Used for Training RL or SFT by loading model
+
 eval.py: Used for evaluation of model (base model or SFT-tuned model or RL-model)
+
 rewards.py: Used for RL with idk reward weight, reward systems defined - format reward and accuracy reward
+
 data.py: Used for loading the datasets
+
 utils.py: Utility functions for extracting answers or resolving checkpoints
 
 
